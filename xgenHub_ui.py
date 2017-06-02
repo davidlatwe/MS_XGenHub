@@ -137,8 +137,10 @@ def ui_main():
 		if pm.columnLayout(exp_column, q= 1, ex= 1):
 			pm.deleteUI(exp_column)
 		
-		pal_optMenu.clear()
-		des_optMenu.clear()
+		if pal_optMenu.getItemListLong():
+			pal_optMenu.clear()
+		if des_optMenu.getItemListLong():
+			des_optMenu.clear()
 		pm.menuItem('All descriptions', p= des_optMenu)
 		
 		pm.picture(snapShot_pic, e= 1, i= snapShot_empty)
@@ -172,7 +174,7 @@ def ui_main():
 			pm.picture(snapShot_pic, e= 1, i= tmpPath)
 
 		for i in range(5):
-			pm.button('xgenHub_snapShotBtn' + str(i+1), e= 1, c= partial(snapshot_take, i))
+			pm.button('xgenHub_snapShotBtn' + str(i+1), e= 1, en= 1, c= partial(snapshot_take, i))
 
 	def init_checkIn():
 		"""doc"""
@@ -187,24 +189,35 @@ def ui_main():
 			for pal in palList:
 				if os.path.isdir(os.path.join(msXGenHub.vsRepo, pal)):
 					pm.menuItem(pal, p= pal_optMenu)
-			if palList:
+				
+		def versionList():
+			"""doc"""
+			for item in pm.optionMenu(ver_opMenu, q= 1, ill= 1):
+				pm.deleteUI(item)
+			if msXGenHub.linked and os.listdir(msXGenHub.vsRepo):
 				palPath = os.path.join(msXGenHub.vsRepo, pal_optMenu.getValue())
 				verList = os.listdir(palPath)
 				verList.reverse()
 				for ver in verList:
 					pm.menuItem(ver, p= ver_opMenu)
-		
-		def descriptionList(*args):
+
+		def descriptionList():
 			"""doc"""
-			des_optMenu.clear()
+			if des_optMenu.getItemListLong():
+				des_optMenu.clear()
 			pm.menuItem('All descriptions', p= des_optMenu)
-			version = pm.optionMenu(ver_opMenu, q= 1, v= 1)
-			palVerPath = os.path.join(msXGenHub.vsRepo, pal, version)
-			if msXGenHub.linked and os.path.isdir(palVerPath):
-				for desc in os.listdir(palVerPath):
-					if os.path.isdir(os.path.join(palVerPath, desc)) and not desc == '_snapshot_':
-						pm.menuItem(desc, p= des_optMenu)
-		pm.optionMenu(pal_optMenu, e= 1, cc= descriptionList)
+			if msXGenHub.linked and os.listdir(msXGenHub.vsRepo):
+				palName = pal_optMenu.getValue()
+				version = pm.optionMenu(ver_opMenu, q= 1, v= 1)
+				palVerPath = os.path.join(msXGenHub.vsRepo, palName, version)
+				if msXGenHub.linked and os.path.isdir(palVerPath):
+					for desc in os.listdir(palVerPath):
+						if os.path.isdir(os.path.join(palVerPath, desc)) and not desc == '_snapshot_':
+							pm.menuItem(desc, p= des_optMenu)
+			else:
+				pm.rowLayout(descOptionZone, e= 1, en= False)
+				for i in range(5):
+					pm.button('xgenHub_snapShotBtn' + str(i+1), e= 1, en= 0)
 
 		def snapshot_show(index, *args):
 			"""doc"""
@@ -220,11 +233,21 @@ def ui_main():
 		for i in range(5):
 			pm.button('xgenHub_snapShotBtn' + str(i+1), e= 1, c= partial(snapshot_show, i))
 		
+		def descAndVerAndSnapshot(*args):
+			"""doc"""
+			versionList()
+			descriptionList()
+			snapshot_show(0)
+		pm.optionMenu(pal_optMenu, e= 1, cc= descAndVerAndSnapshot)
+
 		def descAndSnapshot(*args):
 			"""doc"""
 			descriptionList()
 			snapshot_show(0)
 		pm.optionMenu(ver_opMenu, e= 1, cc= descAndSnapshot)
+
+		# load version
+		versionList()
 		# load description
 		descriptionList()
 		# load snapshot
