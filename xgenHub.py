@@ -44,6 +44,7 @@ class MsXGenHub():
 		self.anchor = xg.getProjectPath() + 'xgen/xgenRepo.anchor'
 		self.linked = False
 		self.vsRepoRaw = '${PROJECT}xgen/.version'
+		self.projPath = ''
 		self.vsRepo = ''
 		# get versionRepo path from working anchor
 		if os.path.isfile(self.anchor):
@@ -53,6 +54,7 @@ class MsXGenHub():
 		# check if versionRepo path is good
 		if self.vsRepo and os.path.exists(self.vsRepo):
 			self.linked = True
+			self.projPath = self.vsRepo.replace('xgen/.version', '')
 		else:
 			pm.warning('[XGen Hub] : versionRepo not linked yet.')
 
@@ -60,8 +62,8 @@ class MsXGenHub():
 	def initVersionRepo(self, repoProjPath):
 		"""doc"""
 		# Check versionRepo dir exists
-		repoProjPath += '/' if not repoProjPath.endswith('/') else ''
-		self.vsRepo = self.vsRepoRaw.replace('${PROJECT}', repoProjPath)
+		self.projPath = repoProjPath + '/' if not repoProjPath.endswith('/') else ''
+		self.vsRepo = self.vsRepoRaw.replace('${PROJECT}', self.projPath)
 		if not os.path.exists(self.vsRepo):
 			# Create versionRepo dir
 			try:
@@ -371,9 +373,11 @@ class MsXGenHub():
 		"""
 		# change to export version path and keep current
 		workPath = xg.getAttr('xgDataPath', palName)
+		workProj = xg.getAttr('xgProjectPath', palName)
+		xg.setAttr('xgDataPath', self.paletteVerDir(palName, version, raw= True), palName)
+		xg.setAttr('xgProjectPath', self.projPath, palName)
+		# get resolved repo path
 		dataPath = self.paletteVerDir(palName, version)
-		rawPath = self.paletteVerDir(palName, version, raw= True)
-		xg.setAttr('xgDataPath', rawPath, palName)
 
 		self.clearPreview()
 
@@ -480,6 +484,7 @@ class MsXGenHub():
 
 		# restore dataPath
 		xg.setAttr('xgDataPath', workPath, palName)
+		xg.setAttr('xgProjectPath', workProj, palName)
 
 		self.refresh('Full')
 

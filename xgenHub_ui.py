@@ -50,9 +50,9 @@ def ui_main():
 	pm.setParent('..')
 
 	pm.columnLayout(column_linkArea, adj= 1, cal= 'left')
-	pm.text(l= '  - XGenHub Repository', h= 22)
+	pm.text(l= '  - XGenHub Repository Root', h= 22)
 	pm.rowLayout(nc= 2, adj= 1)
-	repoPath_textF = pm.textField(text= msXGenHub.vsRepo, ed= False)
+	repoPath_textF = pm.textField(text= msXGenHub.projPath, ed= False)
 	repoLink_icBtn = pm.iconTextButton(i= 'syncOn.png', w= 20, h= 20)
 	pm.setParent('..')
 
@@ -244,7 +244,7 @@ def ui_main():
 		result = pm.fileDialog2(cap= 'Select Server Project Folder', fm= 3, okc= 'Select', dir= pm.workspace(q= 1, rd= 1))
 		if result:
 			msXGenHub.initVersionRepo(result[0])
-			pm.textField(repoPath_textF, e= 1, text= msXGenHub.vsRepo)
+			pm.textField(repoPath_textF, e= 1, text= msXGenHub.projPath)
 			# init option menus
 			actModeShift(mode_mqsb)
 	repoLink_icBtn.setCommand(partial(linkRepoDir))
