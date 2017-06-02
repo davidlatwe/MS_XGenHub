@@ -17,7 +17,7 @@ import mMaya.mTexture as mTex; reload(mTex)
 import xgenHub; reload(xgenHub)
 
 
-windowTitle = 'XGen Hub - v1.0b'
+windowTitle = 'XGen Hub - v1.0 Alpha'
 windowName = 'ms_xgenHub_mainUI'
 column_main = windowName + '_main_column'
 column_linkArea = windowName + '_linkArea_column'

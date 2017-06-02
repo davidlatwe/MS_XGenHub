@@ -43,6 +43,7 @@ class MsXGenHub():
 		self.xgWork = xg.getProjectPath() + 'xgen/collections'
 		self.anchor = xg.getProjectPath() + 'xgen/xgenRepo.anchor'
 		self.linked = False
+		self.vsRepoRaw = '${PROJECT}xgen/.version'
 		self.vsRepo = ''
 		# get versionRepo path from working anchor
 		if os.path.isfile(self.anchor):
@@ -59,7 +60,8 @@ class MsXGenHub():
 	def initVersionRepo(self, repoProjPath):
 		"""doc"""
 		# Check versionRepo dir exists
-		self.vsRepo = repoProjPath + '/xgen/.version'
+		repoProjPath += '/' if not repoProjPath.endswith('/') else ''
+		self.vsRepo = self.vsRepoRaw.replace('${PROJECT}', repoProjPath)
 		if not os.path.exists(self.vsRepo):
 			# Create versionRepo dir
 			try:
@@ -81,11 +83,12 @@ class MsXGenHub():
 		content = ' !'*20 + warnMsg + ' !'*20 + infoMsg + self.vsRepo
 		with open(self.anchor, 'w') as anchor:
 			anchor.write(content)
+		self.linked = True
 
 
-	def paletteVerDir(self, palName, version):
+	def paletteVerDir(self, palName, version, raw= None):
 		"""doc"""
-		return '/'.join([self.vsRepo, palName, version])
+		return '/'.join([self.vsRepoRaw if raw else self.vsRepo, palName, version])
 
 
 	def paletteWipDir(self, palName):
@@ -368,8 +371,7 @@ class MsXGenHub():
 		"""
 		# change to export version path and keep current
 		workPath = xg.getAttr('xgDataPath', palName)
-		dataPath = self.paletteVerDir(palName, version)
-		dataPath = dataPath.replace(xg.getProjectPath(), '${PROJECT}')
+		dataPath = self.paletteVerDir(palName, version, raw= True)
 		xg.setAttr('xgDataPath', dataPath, palName)
 
 		self.clearPreview()
