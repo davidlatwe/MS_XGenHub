@@ -78,7 +78,7 @@ def setupImportedMap(fileName, palName, descNames, uniqDescNames, nameSpace):
 				line = line.strip(' \t\r\n')
 
 		elif cmp(line, "MapTextures") == 0:
-			# [David] Not Sure about this area
+			# [David] Not Sure about this area, relink 3dPaintTool map perhaps
 			geoms = xg.boundGeometry( palName, curDescription )
 			
 			line = fp.next()
@@ -99,8 +99,11 @@ def setupImportedMap(fileName, palName, descNames, uniqDescNames, nameSpace):
 					mel.eval("fileTexturePlacementConnect( \""+ texNode + "\", \"" + place2dNode + "\" )")
 					cmds.connectAttr (place2dNode + ".outUV", texNode + ".uv")
 					cmds.connectAttr (place2dNode + ".outUvFilterSize", texNode + ".uvFilterSize")
-					
-					cmds.setAttr(texNode+".ftn", segments[2], type="string")
+					# [David] Check texture path
+					if len(segments) > 2:
+						cmds.setAttr(texNode+".ftn", segments[2], type="string")
+					else:
+						cmds.warning( 'regionMap Path is Empty.' )
 					if isColor:
 						ip = texNode + ".outColor"
 					else:

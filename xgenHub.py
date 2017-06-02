@@ -159,6 +159,14 @@ class MsXGenHub():
 		if not os.path.isfile(xgenFile):
 			pm.error('[XGen Hub] : .xgen file is not exists. -> ' + xgenFile)
 			return None
+		# check if palette exists in current scene
+		if palName in xg.palettes():
+			# delete current description folder
+			palDir = xg.expandFilepath(xg.getAttr('xgDataPath', palName), '')
+			if os.path.isdir(palDir):
+				dir_util.remove_tree(palDir)
+			# delete current description
+			xg.deletePalette(palName)
 		# IMPORT PALETTE
 		palName = base.importPalette(xgenFile, deltas, namespace)
 		# update the palette with the current project
@@ -209,6 +217,15 @@ class MsXGenHub():
 		if not os.path.isfile(xdscFile):
 			pm.error('[XGen Hub] : .xdsc file is not exists. -> ' + xdscFile)
 			return None
+		# check if descriptions exists in current scene
+		if descName in xg.descriptions(palName):
+			# delete current description folder
+			descDir = xg.expandFilepath('${DESC}', descName)
+			if os.path.isdir(descDir):
+				dir_util.remove_tree(descDir)
+			# delete current description
+			xg.deleteDescription(palName, descName)
+		# IMPORT DESCRIPTION
 		desc = base.importDescription(palName, xdscFile)
 		# create imported descriptions folder
 		dataPath = xg.getAttr('xgDataPath', palName)
@@ -259,7 +276,8 @@ class MsXGenHub():
 				for desc in groomDesc:
 					src = groomDesc[desc]
 					dst = '/'.join([self.paletteWipDir(palName), desc, 'groom'])
-					dir_util.remove_tree(dst)
+					if os.path.isdir(dst):
+						dir_util.remove_tree(dst)
 					dir_util.copy_tree(src, dst)
 			else:
 				pm.error('[XGen Hub] : Some data missing, Check ScriptEditor. grooming import stopped.')
@@ -341,7 +359,8 @@ class MsXGenHub():
 				for desc in guidesDesc:
 					src = guidesDesc[desc]
 					dst = '/'.join([self.paletteWipDir(palName), desc, 'curves.abc'])
-					os.remove(dst)
+					if os.path.isdir(dst):
+						os.remove(dst)
 					shutil.copyfile(src, dst)
 			else:
 				pm.error('[XGen Hub] : Some .abc missing, Check ScriptEditor. guides import stopped.')
@@ -406,8 +425,17 @@ class MsXGenHub():
 
 		# export descriptions
 		for desc in xg.descriptions(palName):
-			expPath = xg.expandFilepath('${DESC}', desc, True, True) + desc + '.xdsc'
+			dstDescDir = xg.expandFilepath('${DESC}', desc, True, True)
+			expPath = dstDescDir + desc + '.xdsc'
 			xg.exportDescription(palName, desc, expPath)
+			# copy map files
+			srcDescVar = workPath.replace('${PROJECT}', workProj) + '/${DESC}'
+			srcDescDir = xg.expandFilepath(srcDescVar, desc)
+			for mapDir in os.listdir(srcDescDir):
+				srcMap = os.path.join(srcDescDir, mapDir)
+				dstMap = os.path.join(dstDescDir, mapDir)
+				if os.path.isdir(srcMap):
+					dir_util.copy_tree(srcMap, dstMap)
 
 		# export palettes
 		expPath = dataPath + '/' + palName + '.xgen'
