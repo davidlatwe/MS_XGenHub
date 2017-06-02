@@ -371,8 +371,9 @@ class MsXGenHub():
 		"""
 		# change to export version path and keep current
 		workPath = xg.getAttr('xgDataPath', palName)
-		dataPath = self.paletteVerDir(palName, version, raw= True)
-		xg.setAttr('xgDataPath', dataPath, palName)
+		dataPath = self.paletteVerDir(palName, version)
+		rawPath = self.paletteVerDir(palName, version, raw= True)
+		xg.setAttr('xgDataPath', rawPath, palName)
 
 		self.clearPreview()
 
