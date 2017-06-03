@@ -194,7 +194,7 @@ class MsXGenHub():
 					# bind groom to geo
 					pm.mel.igBindFromXGen(desc)
 					# set groom density and sampling method
-					pm.setAttr(igdesc + '.density', 50)
+					pm.setAttr(igdesc + '.density', 1)
 					pm.setAttr(igdesc + '.interpStyle', 1)
 					# set all groom visible on
 					xg.igSetDescriptionVisibility(True)
@@ -239,7 +239,7 @@ class MsXGenHub():
 			xg.modifyFaceBinding(palName, desc, 'Append', '', False, len(igdesc))
 			if igdesc:
 				# set groom density and sampling method
-				pm.setAttr(igdesc + '.density', 50)
+				pm.setAttr(igdesc + '.density', 1)
 				pm.setAttr(igdesc + '.interpStyle', 1)
 
 			# import grooming as well
@@ -390,14 +390,6 @@ class MsXGenHub():
 		Export Palettes, Descriptions, Grooming, Guides, all together,
 		even bake modifiers befoer export if needed.
 		"""
-		# change to export version path and keep current
-		workPath = xg.getAttr('xgDataPath', palName)
-		workProj = xg.getAttr('xgProjectPath', palName)
-		xg.setAttr('xgDataPath', self.paletteVerDir(palName, version, raw= True), palName)
-		xg.setAttr('xgProjectPath', self.projPath, palName)
-		# get resolved repo path
-		dataPath = self.paletteVerDir(palName, version)
-
 		self.clearPreview()
 
 		# bake modifiers
@@ -422,6 +414,14 @@ class MsXGenHub():
 				xg.bakedGroomManagerBake(palName, desc)
 				# set Generator to XPD
 				xg.setActive(palName, desc, 'FileGenerator')
+		
+		# change to export version path and keep current
+		workPath = xg.getAttr('xgDataPath', palName)
+		workProj = xg.getAttr('xgProjectPath', palName)
+		xg.setAttr('xgDataPath', self.paletteVerDir(palName, version, raw= True), palName)
+		xg.setAttr('xgProjectPath', self.projPath, palName)
+		# get resolved repo path
+		dataPath = self.paletteVerDir(palName, version)
 
 		# export descriptions
 		for desc in xg.descriptions(palName):
