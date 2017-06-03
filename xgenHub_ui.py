@@ -329,17 +329,17 @@ def ui_main():
 			palName = str(pal_optMenu.getValue())
 			descName = str(des_optMenu.getValue())
 			version = str(pm.optionMenu(ver_opMenu, q= 1, v= 1))
-			notBake = False if version == 'vBaked' else True
+			bake = True if version == 'vBaked' else False
 			if descName == 'All descriptions':
 				if impType == 'description':
-					msXGenHub.importPalette(palName, version, binding= notBake, copyMaps= notBake)
+					msXGenHub.importPalette(palName, version, not bake)
 				if impType == 'groom only':
 					msXGenHub.importGrooming(palName, version= version)
 				if impType == 'guides only':
 					msXGenHub.importGuides(palName, version= version)
 			else:
 				if impType == 'description':
-					msXGenHub.importDescription(palName, descName, version, binding= notBake)
+					msXGenHub.importDescription(palName, descName, version, not bake)
 				if impType == 'groom only':
 					msXGenHub.importGrooming(palName, descName, version)
 				if impType == 'guides only':

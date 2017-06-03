@@ -12,7 +12,7 @@ import maya.cmds as cmds
 import maya.mel as mel
 import xgenm as xg
 import xgenm.XgExternalAPI as base
-import xgenm.xgUtil as xgutil
+import distutils.dir_util as dir_util
 
 
 def setupDescriptionFolder( paletteRoot, palette, newDesc='' ):
@@ -29,7 +29,7 @@ def setupDescriptionFolder( paletteRoot, palette, newDesc='' ):
 			os.mkdir(descDir)
 
 
-def setupImportedMap(fileName, palName, descNames, uniqDescNames, nameSpace):
+def setupImportedMap(fileName, palName, descNames, repoProjPath):
 	'''
 	When import palette or description, set up attributes with map texture.
 	The setup steps include:
@@ -50,18 +50,18 @@ def setupImportedMap(fileName, palName, descNames, uniqDescNames, nameSpace):
 			line = line.strip(' \t\r\n')
 
 			preDescription = line.split('\t', 3)[3]
-			curDescription = uniqDescNames[0]
+			curDescription = descNames[0]
 			for i in range(len(descNames)):
 				if descNames[i] == preDescription:
-					curDescription = uniqDescNames[i]
+					curDescription = descNames[i]
 
 			line = fp.next()
 			line = line.strip(' \t\r\n')
 			while line and cmp(line, "endAttrs"):
 				if line.startswith("xgDataPath"):
 					xgDataPath = line.split("\t")[2]
-				elif line.startswith("xgProjectPath"):
-					xgProjectPath = line.split("\t")[2]
+				if line.startswith("xgProjectPath"):
+					xgProjectPath = repoProjPath
 					palPath = ""
 					if xgDataPath.startswith("${PROJECT}"):
 						palPath = xgDataPath.replace("${PROJECT}", xgProjectPath)
@@ -71,13 +71,13 @@ def setupImportedMap(fileName, palName, descNames, uniqDescNames, nameSpace):
 						
 						srcdir = os.path.join(palPath, preDescription)
 						dstdir = os.path.join(curPalDir, curDescription)
-						xgutil.copyFolder(srcdir, dstdir)
+						dir_util.copy_tree(srcdir, dstdir)
 					else:
-						cmds.error( 'Cannot get palette Path.' )
+						cmds.error( 'The [xgDataPath] not starts with "${PROJECT}"' )
 				line = fp.next()
 				line = line.strip(' \t\r\n')
 
-		elif cmp(line, "MapTextures") == 0:
+		if cmp(line, "MapTextures") == 0:
 			# [David] Not Sure about this area, relink 3dPaintTool map perhaps
 			geoms = xg.boundGeometry( palName, curDescription )
 			

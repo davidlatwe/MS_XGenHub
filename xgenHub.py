@@ -147,12 +147,11 @@ class MsXGenHub():
 		return imgPath
 
 	@linkedCheck
-	def importPalette(self, palName, version, deltas= [], namespace= '', binding= False, copyMaps= False):
+	def importPalette(self, palName, version, binding= False):
 		"""
 		** NOT SUPPORT NAMESPACE **
-		Input var namespace was kept for future update.
 		XGen palette will imported without validator.
-		[!!!] When importing [BAKED] palette, @binding and @copyMaps set to False should be fine.
+		[!!!] When importing [BAKED] palette, @binding set to False should be fine.
 		"""
 		xgenFileName = palName + '.xgen'
 		xgenFile = '/'.join([self.paletteVerDir(palName, version), xgenFileName])
@@ -161,14 +160,14 @@ class MsXGenHub():
 			return None
 		# check if palette exists in current scene
 		if palName in xg.palettes():
-			# delete current description folder
+			# delete current palette folder
 			palDir = xg.expandFilepath(xg.getAttr('xgDataPath', palName), '')
 			if os.path.isdir(palDir):
 				dir_util.remove_tree(palDir)
-			# delete current description
+			# delete current palette
 			xg.deletePalette(palName)
 		# IMPORT PALETTE
-		palName = base.importPalette(xgenFile, deltas, namespace)
+		palName = base.importPalette(xgenFile, [], '')
 		# update the palette with the current project
 		xg.setAttr('xgProjectPath', xg.getProjectPath(), palName)
 		dataPath = xg.paletteRootVar() + '/' + palName
@@ -180,10 +179,8 @@ class MsXGenHub():
 		# wrap into maya nodes
 		palName = str(pm.mel.xgmWrapXGen(pal= palName, wp= binding, wlg= binding, gi= binding))
 		# copy maps from source
-		if copyMaps:
-			descNames = xg.descriptions(palName)
-			uniqDescNames = descNames
-			msxg.setupImportedMap(xgenFile, palName, descNames, uniqDescNames, namespace)
+		descNames = xg.descriptions(palName)
+		msxg.setupImportedMap(xgenFile, palName, descNames, self.projPath)
 		# bind grooming descriptions to geometry
 		if binding:
 			for desc in descNames:
@@ -385,7 +382,7 @@ class MsXGenHub():
 		return True
 
 	@linkedCheck
-	def exportFullPackage(self, palName, version, bake= None):
+	def exportFullPackage(self, palName, version, bake= False):
 		"""
 		Export Palettes, Descriptions, Grooming, Guides, all together,
 		even bake modifiers befoer export if needed.
