@@ -25,7 +25,7 @@ column_linkArea = windowName + '_linkArea_column'
 windowWidth = 260
 windowHeight = 300
 
-snapShot_empty = os.path.dirname(__file__) + '/None.jpg'
+snapShot_empty = os.path.dirname(__file__) + '/None.png'
 
 
 def ui_main():
@@ -59,8 +59,8 @@ def ui_main():
 	pm.columnLayout()
 	pm.text(l= ' - Action Mode', h= 20)
 	cmA= pm.columnLayout()
-	mode_mqsb = mqsb.SwitchBox(onl= 'CHECK  OUT', ofl= 'CHECK  IN',
-		w= windowWidth - 6, h= 35, ofbg= [140, 80, 60], onbg= [140, 100, 40], v= True, p= cmA)
+	mode_mqsb = mqsb.SwitchBox(onl= 'CHECK  IN', ofl= 'CHECK  OUT',
+		w= windowWidth - 6, h= 35, onbg= [126, 121, 31], ofbg= [60, 124, 69], v= True, p= cmA)
 	pm.setParent('..')
 	pm.setParent('..')
 
@@ -100,7 +100,7 @@ def ui_main():
 	pm.columnLayout(adj= 1, cal= 'center')
 	pm.text(l= '  [ Snapshots ]  ', h= 20)
 	pm.columnLayout(adj= 1, h= 142, cal= 'center')
-	snapShot_pic = pm.picture(i= snapShot_empty)
+	snapShot_pic = pm.image(i= snapShot_empty)
 	pm.setParent('..')
 	pm.text(l= '', h= 2)
 	pm.rowLayout(nc= 5)
@@ -114,7 +114,7 @@ def ui_main():
 	pm.text(l= '', h= 2)
 
 	pm.columnLayout(adj= 1)
-	proc_btn = pm.button(l= 'P R O C E E D', h= 45, bgc= [0.3, 0.4, 0.5])
+	proc_btn = pm.button(l= 'P R O C E E D', h= 45, bgc= [0.25, 0.46, 0.49])
 	pm.setParent('..')
 
 	# COMMANDS AND FUNCTIONS
@@ -128,7 +128,7 @@ def ui_main():
 		def snapshot_clear():
 			"""doc"""
 			for i in range(5):
-				tmpPath = 'C:/temp/xgenHubSnap_' + str(i+1) + '.jpg'
+				tmpPath = 'C:/temp/xgenHubSnap_' + str(i+1) + '.png'
 				if os.path.isfile(tmpPath):
 					os.remove(tmpPath)
 		
@@ -143,10 +143,10 @@ def ui_main():
 			des_optMenu.clear()
 		pm.menuItem('All descriptions', p= des_optMenu)
 		
-		pm.picture(snapShot_pic, e= 1, i= snapShot_empty)
+		pm.image(snapShot_pic, e= 1, i= snapShot_empty)
 		snapshot_clear()
 
-	def init_checkOut():
+	def init_checkIn():
 		"""doc"""
 		pm.columnLayout(exp_column, cal= 'left', p= holder_col)
 		pm.text(l= '  + Version', h= 20)
@@ -164,19 +164,21 @@ def ui_main():
 			"""
 			Take snapshots before export.
 			"""
-			oriPath = pm.picture(snapShot_pic, q= 1, i= 1)
-			tmpPath = 'C:/temp/xgenHubSnap_' + str(i+1) + '.jpg'
+			oriPath = pm.image(snapShot_pic, q= 1, i= 1)
+			tmpPath = 'C:/temp/xgenHubSnap_' + str(i+1) + '.png'
 			if not os.path.isfile(tmpPath) or oriPath == tmpPath:
 				if not os.path.exists(os.path.dirname(tmpPath)):
 					os.mkdir(os.path.dirname(tmpPath))
-				pm.refresh(cv= True, fe= 'jpg', fn= tmpPath)
-				mTex.resizeTexture(tmpPath, tmpPath, [252, 140], True)
-			pm.picture(snapShot_pic, e= 1, i= tmpPath)
+				pm.refresh(cv= True, fe= 'png', fn= tmpPath)
+				imgSize = [252, 140]
+				mTex.resizeImage(tmpPath, tmpPath, imgSize, True)
+				mTex.extendImage(tmpPath, imgSize, [80, 80, 80, 255])
+			pm.image(snapShot_pic, e= 1, i= tmpPath)
 
 		for i in range(5):
 			pm.button('xgenHub_snapShotBtn' + str(i+1), e= 1, en= 1, c= partial(snapshot_take, i))
 
-	def init_checkIn():
+	def init_checkOut():
 		"""doc"""
 		pm.columnLayout(ver_column, cal= 'left', p= holder_col)
 		pm.text(l= '  = Version', h= 20)
@@ -228,7 +230,7 @@ def ui_main():
 				if palName and version:
 					imgPath = msXGenHub.snapshotImgPath(palName, version, str(index+1))
 					imgPath = imgPath if os.path.isfile(imgPath) else snapShot_empty
-			pm.picture(snapShot_pic, e= 1, i= imgPath)
+			pm.image(snapShot_pic, e= 1, i= imgPath)
 		
 		for i in range(5):
 			pm.button('xgenHub_snapShotBtn' + str(i+1), e= 1, c= partial(snapshot_show, i))
@@ -257,9 +259,9 @@ def ui_main():
 		"""doc"""
 		clearBoth()
 		if mqsb.isChecked():
-			init_checkOut()
-		else:
 			init_checkIn()
+		else:
+			init_checkOut()
 	mode_mqsb.toggleCmd = partial(actModeShift, mode_mqsb)
 
 	def linkRepoDir(*args):

@@ -6,42 +6,61 @@ Created on 2017.02.21
 '''
 from pymel.core import *
 import maya.OpenMaya as om
+import PySide.QtGui as QtGui
 
 
-def getTextureRes(imgPath):
+
+def getImageRes(imgPath):
 	"""
+	This was wrote in OpenMaya, but Qt is much simpler.
 	"""
-	utilWidth = om.MScriptUtil()
-	utilWidth.createFromInt(0)
-	ptrWidth = utilWidth.asUintPtr()
-	utilHeight = om.MScriptUtil()
-	utilHeight.createFromInt(0)
-	ptrHeight = utilHeight.asUintPtr()
+	imageFile = QtGui.QImage(imgPath)
+	return imageFile.width(), imageFile.height()
+
+
+def resizeImage(imgPath, newPath, imgSize, keepRatio= True):
+	"""doc"""
+	imageFile = om.MImage()
+	imageFile.readFromFile(imgPath)
+	imageFile.resize(imgSize[0], imgSize[1], keepRatio)
+	imageFile.writeToFile(newPath, newPath.split('.')[-1])
+
+
+def extendImage(imgPath, imgSize, bgColor):
+	"""
+	This was wrote in OpenMaya, but some how make Maya crash almost everytime,
+	I think it was memory issue...
+	Anyway, this is in Qt now.
+	"""
+	sourceImage = QtGui.QImage(imgPath)
+	width = sourceImage.width()
+	height = sourceImage.height()
+	# check input image has only one side needs to extend
+	widthExtend = width < imgSize[0] and height == imgSize[1]
+	hightExtend = height < imgSize[1] and width == imgSize[0]
+	if not (widthExtend or hightExtend):
+		return
+	# create extended image and fill with default color
+	cr, cg, cb, ca = bgColor
+	qFormat = QtGui.QImage.Format.Format_ARGB32
+	extendImage = QtGui.QImage(imgSize[0], imgSize[1], qFormat)
+	extendImage.fill(QtGui.QColor(cr, cg, cb, ca))
+	# write in pixel
+	def setPix(shift_x, shift_y, x, y):
+		"""get source pixel with alpha 255 and set to extended image"""
+		px = QtGui.QColor(sourceImage.pixel(shift_x, shift_y))
+		px.setAlpha(255)
+		extendImage.setPixel(x, y, px.rgba())
 	
-	try:
-		textureFile = om.MImage()
-		textureFile.readFromFile ( imgPath )
-		textureFile.getSize(ptrWidth, ptrHeight)
-		width = om.MScriptUtil.getUint(ptrWidth)
-		height = om.MScriptUtil.getUint(ptrHeight)
-
-		return width, height
-
-	except:
-		warning( 'Texture Res error: ' + imgPath )
-		
-		return None
-
-
-def resizeTexture(imgPath, newPath, imgSize, preserveAspectRatio= True):
-	"""
-	"""
-	try:
-		textureFile = om.MImage()
-		textureFile.readFromFile(imgPath)
-		textureFile.resize(imgSize[0], imgSize[1], preserveAspectRatio)
-		textureFile.writeToFile(newPath, newPath.split('.')[-1])
-	except Exception, e:
-		warning('image file resize error: ' + imgPath)
-		print e
-		error('Failed resize image to: ' + newPath)
+	for x in range(0, imgSize[0]):
+		for y in range(0, imgSize[1]):
+			if widthExtend:
+				extend = (imgSize[0] - width) / 2
+				if not (x < extend or x >= width + extend):
+					setPix(x - extend, y, x, y)
+			if hightExtend:
+				extend = (imgSize[1] - height) / 2
+				if not (y < extend or y >= height + extend):
+					setPix(x, y - extend, x, y)
+	# write out
+	extendImage.save(imgPath)
