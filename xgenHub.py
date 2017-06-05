@@ -42,6 +42,8 @@ class MsXGenHub():
 	def __init__(self):
 		self.xgWork = xg.getProjectPath() + 'xgen/collections'
 		self.anchor = xg.getProjectPath() + 'xgen/xgenRepo.anchor'
+		self.snapshotExt = '.bmp'
+		self.snapshotTmp = 'C:/temp/xgenHubSnap_%d' + self.snapshotExt
 		self.linked = False
 		self.vsRepoRaw = '${PROJECT}xgen/.version'
 		self.projPath = ''
@@ -142,7 +144,7 @@ class MsXGenHub():
 	@linkedCheck
 	def snapshotImgPath(self, palName, version, index):
 		"""doc"""
-		imgName = '_'.join([palName, version, str(index)]) + '.jpg'
+		imgName = '_'.join([palName, version, str(index)]) + self.snapshotExt
 		imgPath = '/'.join([self.paletteVerDir(palName, version), '_snapshot_', imgName])
 		return imgPath
 
@@ -388,8 +390,9 @@ class MsXGenHub():
 		even bake modifiers befoer export if needed.
 		"""
 		self.clearPreview()
-
+		
 		# bake modifiers
+		generator = {}
 		if bake:
 			for desc in xg.descriptions(palName):
 				# bake Noise modifiers
@@ -398,18 +401,20 @@ class MsXGenHub():
 						# temporarily turn off lod so we dont bake it in
 						lod = xg.getAttr('lodFlag', palName, desc)
 						xg.setAttr('lodFlag', 'false', palName, desc)
-						# change mode to bake
+						# change mode for bake
 						xg.setAttr('mode', '2', palName, desc, fxm)
 						# bake the noise
 						pm.mel.xgmNullRender(pb= desc)
 						# restore
 						xg.setAttr('lodFlag', lod, palName, desc)
+						# change mode to baked
 						xg.setAttr('mode', '1', palName, desc, fxm)
 				# bake groom modifiers
 				fxm = xg.addFXModule(palName, desc, 'BakedGroomManagerFXModule')
 				xg.setAttr('active', 'true', palName, desc, fxm)
 				xg.bakedGroomManagerBake(palName, desc)
 				# set Generator to XPD
+				generator[desc] = xg.getActive(palName, desc, 'Generator')
 				xg.setActive(palName, desc, 'FileGenerator')
 		
 		# change to export version path and keep current
@@ -500,7 +505,7 @@ class MsXGenHub():
 
 		# export snapshot
 		for i in range(5):
-			tmpPath = 'C:/temp/xgenHubSnap_' + str(i+1) + '.jpg'
+			tmpPath = self.snapshotTmp % (i+1)
 			if os.path.isfile(tmpPath):
 				imgPath = self.snapshotImgPath(palName, version, str(i+1))
 				if not os.path.exists(os.path.dirname(imgPath)):
@@ -510,6 +515,21 @@ class MsXGenHub():
 		# restore dataPath
 		xg.setAttr('xgDataPath', workPath, palName)
 		xg.setAttr('xgProjectPath', workProj, palName)
+
+		# restore modifiers
+		if bake:
+			for desc in xg.descriptions(palName):
+				# bake Noise modifiers
+				for fxm in xg.fxModules(palName, desc):
+					if xg.fxModuleType(palName, desc, fxm) == 'NoiseFXModule':
+						# restore to live mode
+						xg.setAttr('mode', '0', palName, desc, fxm)
+				# remove bake groom modifiers
+				for fxm in xg.fxModules(palName, desc):
+					if xg.fxModuleType(palName, desc, fxm) == 'BakedGroomManagerFXModule':
+						xg.removeFXModule(palName, desc, fxm)
+				# restore Generator
+				xg.setActive(palName, desc, generator[desc])
 
 		self.refresh('Full')
 

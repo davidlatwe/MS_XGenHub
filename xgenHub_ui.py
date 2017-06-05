@@ -24,8 +24,12 @@ column_linkArea = windowName + '_linkArea_column'
 
 windowWidth = 260
 windowHeight = 300
-
-snapShot_empty = os.path.dirname(__file__) + '/None.png'
+snapshotSize = [252, 140]
+snapshot_empty = os.path.dirname(__file__) + '/None.png'
+snapshot_extnQ = [80, 80, 80, 255]
+snapshot_showC = [.22, .46, .34]
+snapshot_takeC = [.48, .25, .28]
+snapshot_restC = [.36, .36, .36]
 
 
 def ui_main():
@@ -100,7 +104,7 @@ def ui_main():
 	pm.columnLayout(adj= 1, cal= 'center')
 	pm.text(l= '  [ Snapshots ]  ', h= 20)
 	pm.columnLayout(adj= 1, h= 142, cal= 'center')
-	snapShot_pic = pm.image(i= snapShot_empty)
+	snapShot_pic = pm.image(i= snapshot_empty)
 	pm.setParent('..')
 	pm.text(l= '', h= 2)
 	pm.rowLayout(nc= 5)
@@ -128,7 +132,7 @@ def ui_main():
 		def snapshot_clear():
 			"""doc"""
 			for i in range(5):
-				tmpPath = 'C:/temp/xgenHubSnap_' + str(i+1) + '.png'
+				tmpPath = msXGenHub.snapshotTmp % (i+1)
 				if os.path.isfile(tmpPath):
 					os.remove(tmpPath)
 		
@@ -143,7 +147,7 @@ def ui_main():
 			des_optMenu.clear()
 		pm.menuItem('All descriptions', p= des_optMenu)
 		
-		pm.image(snapShot_pic, e= 1, i= snapShot_empty)
+		pm.image(snapShot_pic, e= 1, i= snapshot_empty)
 		snapshot_clear()
 
 	def init_checkIn():
@@ -160,23 +164,32 @@ def ui_main():
 		for pal in pm.ls(type= 'xgmPalette'):
 			pm.menuItem(pal.name(), p= pal_optMenu)
 
-		def snapshot_take(i, *args):
+		def snapshot_take(index, *args):
 			"""
 			Take snapshots before export.
 			"""
 			oriPath = pm.image(snapShot_pic, q= 1, i= 1)
-			tmpPath = 'C:/temp/xgenHubSnap_' + str(i+1) + '.png'
+			tmpPath = msXGenHub.snapshotTmp % (index+1)
 			if not os.path.isfile(tmpPath) or oriPath == tmpPath:
 				if not os.path.exists(os.path.dirname(tmpPath)):
 					os.mkdir(os.path.dirname(tmpPath))
-				pm.refresh(cv= True, fe= 'png', fn= tmpPath)
-				imgSize = [252, 140]
-				mTex.resizeImage(tmpPath, tmpPath, imgSize, True)
-				mTex.extendImage(tmpPath, imgSize, [80, 80, 80, 255])
+				pm.refresh(cv= True, fe= msXGenHub.snapshotExt, fn= tmpPath)
+				snapImg = mTex.MQImage(tmpPath)
+				snapImg = mTex.resizeImage(snapImg, snapshotSize, True)
+				snapImg = mTex.extendImage(snapImg, snapshotSize, snapshot_extnQ)
+				snapImg = mTex.paintTextWatermark(snapImg, str(index+1), [20, 40], [10, 10, 10, 255])
+				snapImg.save(tmpPath)
+				pm.button('xgenHub_snapShotBtn' + str(index+1), e= 1, bgc= snapshot_takeC)
+			else:
+				pm.button('xgenHub_snapShotBtn' + str(index+1), e= 1, bgc= snapshot_showC)
 			pm.image(snapShot_pic, e= 1, i= tmpPath)
+			for i in range(5):
+				if not i == index:
+					pm.button('xgenHub_snapShotBtn' + str(i+1), e= 1, bgc= snapshot_restC)
 
 		for i in range(5):
-			pm.button('xgenHub_snapShotBtn' + str(i+1), e= 1, en= 1, c= partial(snapshot_take, i))
+			pm.button('xgenHub_snapShotBtn' + str(i+1), e= 1, en= 1, c= partial(snapshot_take, i),
+				bgc= snapshot_restC)
 
 	def init_checkOut():
 		"""doc"""
@@ -223,14 +236,18 @@ def ui_main():
 
 		def snapshot_show(index, *args):
 			"""doc"""
-			imgPath = snapShot_empty
+			imgPath = snapshot_empty
 			if msXGenHub.linked and os.listdir(msXGenHub.vsRepo):
 				palName = pal_optMenu.getValue()
 				version = pm.optionMenu(ver_opMenu, q= 1, v= 1)
 				if palName and version:
 					imgPath = msXGenHub.snapshotImgPath(palName, version, str(index+1))
-					imgPath = imgPath if os.path.isfile(imgPath) else snapShot_empty
+					imgPath = imgPath if os.path.isfile(imgPath) else snapshot_empty
 			pm.image(snapShot_pic, e= 1, i= imgPath)
+			pm.button('xgenHub_snapShotBtn' + str(index+1), e= 1, bgc= snapshot_showC)
+			for i in range(5):
+				if not i == index:
+					pm.button('xgenHub_snapShotBtn' + str(i+1), e= 1, bgc= snapshot_restC)
 		
 		for i in range(5):
 			pm.button('xgenHub_snapShotBtn' + str(i+1), e= 1, c= partial(snapshot_show, i))
