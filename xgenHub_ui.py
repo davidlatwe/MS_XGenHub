@@ -22,8 +22,8 @@ windowName = 'ms_xgenHub_mainUI'
 column_main = windowName + '_main_column'
 column_linkArea = windowName + '_linkArea_column'
 
-windowWidth = 260
-windowHeight = 300
+windowWidth = 261
+windowHeight = 504
 snapshotSize = [252, 140]
 snapshot_empty = os.path.dirname(__file__) + '/None.png'
 snapshot_extnQ = [80, 80, 80, 255]
@@ -101,6 +101,17 @@ def ui_main():
 
 	pm.setParent('..')
 
+
+	checkInToolZone = pm.rowLayout(nc= 1, adj= 1, en= False)
+
+	pm.columnLayout(cal= 'left')
+	pm.text(l= '  * AnimWire Ready', h= 20)
+	linkHairSysBtn = pm.button(l= 'Link Hair System', bgc= [0.3, 0.3, 0.3], h= 20, w= 252)
+	pm.setParent('..')
+
+	pm.setParent('..')
+
+
 	pm.columnLayout(adj= 1, cal= 'center')
 	pm.text(l= '  [ Snapshots ]  ', h= 20)
 	pm.columnLayout(adj= 1, h= 142, cal= 'center')
@@ -158,11 +169,25 @@ def ui_main():
 		pm.menuItem('BUMP')
 		pm.menuItem('SAVE')
 		pm.menuItem('BAKE')
+		pm.menuItem('ANIM')
 		pm.setParent('..')
-		pm.rowLayout(descOptionZone, e= 1, en= False)
+		pm.rowLayout(descOptionZone, e= 1, en= False, vis= False)
+		pm.rowLayout(checkInToolZone, e= 1, en= False, vis= True)
 
 		for pal in pm.ls(type= 'xgmPalette'):
 			pm.menuItem(pal.name(), p= pal_optMenu)
+
+		def animToolEnable(*args):
+			"""doc"""
+			mode = pm.optionMenu(exp_opMenu, q= 1, v= 1)
+			if mode == 'ANIM':
+				pm.rowLayout(checkInToolZone, e= 1, en= True, vis= True)
+				pm.button(linkHairSysBtn, e= 1, bgc= [0.41, 0.32, 0.25])
+			else:
+				print pm.button(linkHairSysBtn, q= 1, bgc= 1)
+				pm.rowLayout(checkInToolZone, e= 1, en= False, vis= True)
+				pm.button(linkHairSysBtn, e= 1, bgc= [0.3, 0.3, 0.3])
+		pm.optionMenu(exp_opMenu, e= 1, cc= animToolEnable)
 
 		def snapshot_take(index, *args):
 			"""
@@ -197,7 +222,8 @@ def ui_main():
 		pm.text(l= '  = Version', h= 20)
 		pm.optionMenu(ver_opMenu, w= 100)
 		pm.setParent('..')
-		pm.rowLayout(descOptionZone, e= 1, en= True)
+		pm.rowLayout(descOptionZone, e= 1, en= True, vis= True)
+		pm.rowLayout(checkInToolZone, e= 1, en= False, vis= False)
 
 		if msXGenHub.linked:
 			palList = os.listdir(msXGenHub.vsRepo)
@@ -211,7 +237,7 @@ def ui_main():
 				pm.deleteUI(item)
 			if msXGenHub.linked and os.listdir(msXGenHub.vsRepo):
 				palPath = os.path.join(msXGenHub.vsRepo, pal_optMenu.getValue())
-				verList = os.listdir(palPath)
+				verList = [d for d in os.listdir(palPath) if not d.startswith(msXGenHub.dirAnim)]
 				verList.reverse()
 				for ver in verList:
 					pm.menuItem(ver, p= ver_opMenu)
@@ -279,6 +305,7 @@ def ui_main():
 			init_checkIn()
 		else:
 			init_checkOut()
+		pm.window(windowName, e= 1, w= windowWidth, h= windowHeight)
 	mode_mqsb.toggleCmd = partial(actModeShift, mode_mqsb)
 
 	def linkRepoDir(*args):
@@ -291,6 +318,13 @@ def ui_main():
 			actModeShift(mode_mqsb)
 	repoLink_icBtn.setCommand(partial(linkRepoDir))
 
+	def linkHairSys(*args):
+		"""doc"""
+		palName = str(pal_optMenu.getValue())
+		msXGenHub.linkHairSystem(palName)
+
+	linkHairSysBtn.setCommand(linkHairSys)
+
 	def process(mqsb, *args):
 		"""doc"""
 		if mqsb.isChecked():
@@ -301,21 +335,34 @@ def ui_main():
 			palName = str(pal_optMenu.getValue())
 			expMode = pm.optionMenu(exp_opMenu, q= 1, v= 1)
 			newWork = True
+			noBaked = True
 			version = '000'
 			bake = False
+			anim = False
 			palPath = os.path.join(msXGenHub.vsRepo, palName)
 			if os.path.exists(palPath):
-				verList = os.listdir(palPath)
+				verList = [d for d in os.listdir(palPath) if not d.startswith(msXGenHub.dirAnim)]
 				if verList:
 					version = verList[-1][1:]
 					newWork = False
+					noBaked = False if msXGenHub.dirBake in verList else True
+			
+			# get anim version
+			if expMode == 'ANIM':
+				version = '00'
+				if os.path.exists(palPath):
+					verList = [d for d in os.listdir(palPath) if d.startswith(msXGenHub.dirAnim)]
+					if verList:
+						version = verList[-1][len(msXGenHub.dirAnim):]
+
 			# check if get baked version, and we are not going to bake now
 			if not version.isdigit() and not expMode == 'BAKE':
 				# jump back to previous version
-				version = verList[-2][1:]
-				if not version.isdigit():
+				version = verList[-2][1:] if not expMode == 'ANIM' else verList[-2][len(msXGenHub.dirAnim):]
+				if not version.isdigit() or not (expMode == 'ANIM' and len(version) == 2):
 					# one palette should have one baked version only
-					pm.error('[XGen Hub] : Version Repo Error.')
+					pm.error('[XGen Hub] : Version Repo Error. Export Mode: [%s]' % expMode)
+
 			# set version
 			if expMode == 'BUMP':
 				version = 'v%03d' % (int(version) + 1)
@@ -326,8 +373,17 @@ def ui_main():
 					pm.warning('[XGen Hub] : Should Not Bake with no version backup.')
 					return None
 				bake = True
-				version = 'vBaked'
-			msXGenHub.exportFullPackage(palName, version, bake)
+				version = msXGenHub.dirBake
+			if expMode == 'ANIM':
+				if newWork:
+					pm.warning('[XGen Hub] : Should Not go Anim with no version backup.')
+					return None
+				if noBaked:
+					pm.warning('[XGen Hub] : Should Not go Anim without baked version.')
+					return None
+				anim = True
+				version = '%s%02d' % (msXGenHub.dirAnim, int(version) + 1)
+			msXGenHub.exportFullPackage(palName, version, bake, anim)
 		else:
 			# import
 			# simple check if geo selected
@@ -348,7 +404,7 @@ def ui_main():
 			palName = str(pal_optMenu.getValue())
 			descName = str(des_optMenu.getValue())
 			version = str(pm.optionMenu(ver_opMenu, q= 1, v= 1))
-			bake = True if version == 'vBaked' else False
+			bake = True if version == msXGenHub.dirBake else False
 			if descName == 'All descriptions':
 				if impType == 'description':
 					msXGenHub.importPalette(palName, version, not bake)

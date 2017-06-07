@@ -19,7 +19,8 @@ import xgenm.xgGlobal as xgg
 import xgenm.XgExternalAPI as base
 
 import mXGen; reload(mXGen)
-import mXGen.msxgmExternalAPI as msxg; reload(msxg)
+import mXGen.msxgmExternalAPI as msxgApi; reload(msxgApi)
+import mXGen.msxgmAnimWireTool as msxgAwt; reload(msxgAwt)
 
 
 def linkedCheck(func):
@@ -42,6 +43,8 @@ class MsXGenHub():
 	def __init__(self):
 		self.xgWork = xg.getProjectPath() + 'xgen/collections'
 		self.anchor = xg.getProjectPath() + 'xgen/xgenRepo.anchor'
+		self.dirBake = 'vBaked'
+		self.dirAnim = 'vAnim'
 		self.snapshotExt = '.bmp'
 		self.snapshotTmp = 'C:/temp/xgenHubSnap_%d' + self.snapshotExt
 		self.linked = False
@@ -100,6 +103,15 @@ class MsXGenHub():
 		return '/'.join([self.xgWork, palName])
 
 
+	def getHairSysName(self, descName):
+		"""doc"""
+		return descName + '_hairSystem'
+
+	def getRigidNameVar(self):
+		"""doc"""
+		return '%s_nRigid'
+
+
 	def refresh(self, level= ''):
 		"""
 		level: 'Full', 'Palette', 'Description'
@@ -149,6 +161,12 @@ class MsXGenHub():
 		return imgPath
 
 	@linkedCheck
+	def nDynPresetPath(self, palName, version):
+		"""doc"""
+		presetPath = '/'.join([self.paletteVerDir(palName, version), '_nDynPresets_'])
+		return presetPath
+
+	@linkedCheck
 	def importPalette(self, palName, version, binding= False):
 		"""
 		** NOT SUPPORT NAMESPACE **
@@ -177,12 +195,12 @@ class MsXGenHub():
 		# create imported palette folder
 		paletteRoot = xg.expandFilepath(dataPath, '', True, True)
 		# create all imported descriptions folder
-		msxg.setupDescriptionFolder(paletteRoot, palName)
+		msxgApi.setupDescriptionFolder(paletteRoot, palName)
 		# wrap into maya nodes
 		palName = str(pm.mel.xgmWrapXGen(pal= palName, wp= binding, wlg= binding, gi= binding))
 		# copy maps from source
 		descNames = xg.descriptions(palName)
-		msxg.setupImportedMap(xgenFile, palName, descNames, self.projPath)
+		msxgApi.setupImportedMap(xgenFile, palName, descNames, self.projPath)
 		# bind grooming descriptions to geometry
 		if binding:
 			for desc in descNames:
@@ -229,7 +247,7 @@ class MsXGenHub():
 		# create imported descriptions folder
 		dataPath = xg.getAttr('xgDataPath', palName)
 		paletteRoot = xg.expandFilepath(dataPath, '')
-		msxg.setupDescriptionFolder(paletteRoot, palName, desc)
+		msxgApi.setupDescriptionFolder(paletteRoot, palName, desc)
 		# wrap into maya nodes
 		pm.mel.xgmWrapXGen(pal= palName, d= desc, gi= binding)
 		# bind to selected geometry
@@ -384,7 +402,7 @@ class MsXGenHub():
 		return True
 
 	@linkedCheck
-	def exportFullPackage(self, palName, version, bake= False):
+	def exportFullPackage(self, palName, version, bake= False, anim= False):
 		"""
 		Export Palettes, Descriptions, Grooming, Guides, all together,
 		even bake modifiers befoer export if needed.
@@ -503,6 +521,20 @@ class MsXGenHub():
 				pm.mel.AbcExport(j= abcCmds + abcRoot + ' -file ' + abcPath)
 		pm.undo()
 
+		if anim:
+			# save out hairSystem preset
+			presetMel = []
+			for nodeType in ['nucleus', 'hairSystem', 'nRigid']:
+				presetDict = self.exportAttrPreset(nodeType)
+				presetMel.extend(presetDict.values())
+			# move preset file to version repo
+			presetPath = self.nDynPresetPath(palName, version)
+			if not os.path.exists(presetPath):
+				os.mkdir(presetPath)
+			for prs in presetMel:
+				dstPath = '/'.join([presetPath, os.path.basename(prs)])
+				shutil.move(prs, dstPath)
+
 		# export snapshot
 		for i in range(5):
 			tmpPath = self.snapshotTmp % (i+1)
@@ -534,6 +566,48 @@ class MsXGenHub():
 		self.refresh('Full')
 
 		return True
+
+
+	def linkHairSystem(self, palName):
+		"""doc"""
+		# get active AnimWire module list
+		animWireDict = {}
+		for desc in xg.descriptions():
+			for fxm in xg.fxModules(palName, desc):
+				if xg.fxModuleType(palName, desc, fxm) == 'AnimWiresFXModule':
+					if xg.getAttr('active', palName, desc, fxm) == 'true':
+						hsysName = self.getHairSysName(desc)
+						hsysTransforms = [str(hsys.getParent().name()) for hsys in pm.ls(type= 'hairSystem')]
+						if hsysName in hsysTransforms:
+							pm.warning('[XGen Hub] : description: %s has hairSystem [%s], skipped.' % (desc, hsysName))
+						else:
+							animWireDict[desc] = fxm
+		# build hairSystem
+		for desc in animWireDict:
+			fxm = animWireDict[desc]
+			pm.warning('[XGen Hub] : Building hairSystem for description: %s, FXModule: %s' % (desc, fxm))
+			descHairSysName = self.getHairSysName(desc)
+			msxgAwt.exportCurvesMel(palName, desc, fxm)
+			meshPatch = msxgAwt.xgmMakeCurvesDynamic(descHairSysName)
+			msxgAwt.nRigidRename(meshPatch, self.getRigidNameVar())
+			msxgAwt.attachSlot(palName, desc, fxm, descHairSysName)
+			pm.warning('[XGen Hub] : Link hairSystem done.')
+
+
+	def exportAttrPreset(self, nodeType):
+		"""doc"""
+		presetDir = str(pm.internalVar(userPresetsDir= 1))
+		presetVar = presetDir + '%sPreset_%s.mel'
+		# save out presets
+		presetDict = {}
+		for node in pm.ls(type= nodeType):
+			presetName = node.name()
+			pm.nodePreset(save= [node, presetName])
+			presetDict[node.name()] = presetVar % (nodeType, presetName)
+
+		return presetDict
+
+
 
 @contextmanager
 def undoable(name):
