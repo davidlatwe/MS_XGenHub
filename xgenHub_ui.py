@@ -102,11 +102,16 @@ def ui_main():
 	pm.setParent('..')
 
 
-	checkInToolZone = pm.rowLayout(nc= 1, adj= 1, en= False)
+	checkInToolZone = pm.rowLayout(nc= 2, adj= 1, en= False)
 
 	pm.columnLayout(cal= 'left')
 	pm.text(l= '  * AnimWire Ready', h= 20)
-	linkHairSysBtn = pm.button(l= 'Link Hair System', bgc= [0.3, 0.3, 0.3], h= 20, w= 252)
+	linkHairSysBtn = pm.button(l= 'Link Hair System', h= 19, w= 140)
+	pm.setParent('..')
+
+	pm.columnLayout(w= 104, cal= 'left')
+	pm.text(l= '  * Anim Branch', h= 20)
+	brn_optMenu = pm.optionMenu(w= 102)
 	pm.setParent('..')
 
 	pm.setParent('..')
@@ -177,17 +182,42 @@ def ui_main():
 		for pal in pm.ls(type= 'xgmPalette'):
 			pm.menuItem(pal.name(), p= pal_optMenu)
 
+		if brn_optMenu.getItemListLong():
+			brn_optMenu.clear()
+		if msXGenHub.linked and os.listdir(msXGenHub.vsRepo) and pal_optMenu.getItemListLong():
+			palPath = os.path.join(msXGenHub.vsRepo, pal_optMenu.getValue())
+			prefix = msXGenHub.dirAnim
+			verList = [d[len(prefix):-2] for d in os.listdir(palPath) if d.startswith(prefix)]
+			verList = list(set(verList))
+			for ver in verList:
+				pm.menuItem(ver, p= brn_optMenu)
+			if verList:
+				pm.menuItem('Add New..', p= brn_optMenu)
+			else:
+				pm.menuItem('BASE', p= brn_optMenu)
+
 		def animToolEnable(*args):
 			"""doc"""
 			mode = pm.optionMenu(exp_opMenu, q= 1, v= 1)
 			if mode == 'ANIM':
 				pm.rowLayout(checkInToolZone, e= 1, en= True, vis= True)
-				pm.button(linkHairSysBtn, e= 1, bgc= [0.41, 0.32, 0.25])
 			else:
-				print pm.button(linkHairSysBtn, q= 1, bgc= 1)
 				pm.rowLayout(checkInToolZone, e= 1, en= False, vis= True)
-				pm.button(linkHairSysBtn, e= 1, bgc= [0.3, 0.3, 0.3])
 		pm.optionMenu(exp_opMenu, e= 1, cc= animToolEnable)
+
+		def addAnimBranch(*args):
+			"""doc"""
+			if not brn_optMenu.getValue() == 'Add New..':
+				return
+			result = pm.promptDialog(title= "New Anim Branch", message= "Enter Name:",
+    			button= ["OK", "Cancel"], defaultButton= "OK", cancelButton= "Cancel",
+    			dismissString= "Cancel")
+			if result == "OK":
+				branch = pm.promptDialog(query= 1, text= 1)
+				pm.menuItem(branch, ia= '', p= brn_optMenu)
+				brn_optMenu.setValue(branch)
+
+		pm.optionMenu(brn_optMenu, e= 1, cc= addAnimBranch)
 
 		def snapshot_take(index, *args):
 			"""
@@ -337,8 +367,10 @@ def ui_main():
 			newWork = True
 			noBaked = True
 			version = '000'
+			verList = []
 			bake = False
 			anim = False
+			
 			palPath = os.path.join(msXGenHub.vsRepo, palName)
 			if os.path.exists(palPath):
 				verList = [d for d in os.listdir(palPath) if not d.startswith(msXGenHub.dirAnim)]
@@ -350,16 +382,18 @@ def ui_main():
 			# get anim version
 			if expMode == 'ANIM':
 				version = '00'
+				dirAnimKeep = msXGenHub.dirAnim
+				msXGenHub.dirAnim += str(brn_optMenu.getValue())
 				if os.path.exists(palPath):
 					verList = [d for d in os.listdir(palPath) if d.startswith(msXGenHub.dirAnim)]
 					if verList:
 						version = verList[-1][len(msXGenHub.dirAnim):]
 
 			# check if get baked version, and we are not going to bake now
-			if not version.isdigit() and not expMode == 'BAKE':
+			if not version.isdigit() and not expMode in ['BAKE', 'ANIM']:
 				# jump back to previous version
-				version = verList[-2][1:] if not expMode == 'ANIM' else verList[-2][len(msXGenHub.dirAnim):]
-				if not version.isdigit() or not (expMode == 'ANIM' and len(version) == 2):
+				version = verList[-2][1:]
+				if not version.isdigit():
 					# one palette should have one baked version only
 					pm.error('[XGen Hub] : Version Repo Error. Export Mode: [%s]' % expMode)
 
@@ -383,6 +417,7 @@ def ui_main():
 					return None
 				anim = True
 				version = '%s%02d' % (msXGenHub.dirAnim, int(version) + 1)
+				msXGenHub.dirAnim = dirAnimKeep
 			msXGenHub.exportFullPackage(palName, version, bake, anim)
 		else:
 			# import

@@ -44,7 +44,7 @@ class MsXGenHub():
 		self.xgWork = xg.getProjectPath() + 'xgen/collections'
 		self.anchor = xg.getProjectPath() + 'xgen/xgenRepo.anchor'
 		self.dirBake = 'vBaked'
-		self.dirAnim = 'vAnim'
+		self.dirAnim = 'sim_'
 		self.snapshotExt = '.bmp'
 		self.snapshotTmp = 'C:/temp/xgenHubSnap_%d' + self.snapshotExt
 		self.linked = False
@@ -438,6 +438,7 @@ class MsXGenHub():
 		# change to export version path and keep current
 		workPath = xg.getAttr('xgDataPath', palName)
 		workProj = xg.getAttr('xgProjectPath', palName)
+		ab = self.paletteVerDir(palName, version, raw= True)
 		xg.setAttr('xgDataPath', self.paletteVerDir(palName, version, raw= True), palName)
 		xg.setAttr('xgProjectPath', self.projPath, palName)
 		# get resolved repo path
