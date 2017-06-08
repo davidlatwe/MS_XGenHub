@@ -98,6 +98,11 @@ class MsXGenHub():
 		return '/'.join([self.vsRepoRaw if raw else self.vsRepo, palName, version])
 
 
+	def paletteDeltaDir(self, palName, version, shotName, raw= None):
+		"""doc"""
+		return '/'.join([self.vsRepoRaw if raw else self.vsRepo, palName, version, '_shot_', shotName])
+
+
 	def paletteWipDir(self, palName):
 		"""doc"""
 		return '/'.join([self.xgWork, palName])
@@ -107,9 +112,15 @@ class MsXGenHub():
 		"""doc"""
 		return descName + '_hairSystem'
 
+
 	def getRigidNameVar(self):
 		"""doc"""
 		return '%s_nRigid'
+
+
+	def getAnimBranch(self, palName):
+		"""doc"""
+		return str(xg.getAttr('xgDogTag', palName))
 
 
 	def refresh(self, level= ''):
@@ -163,11 +174,11 @@ class MsXGenHub():
 	@linkedCheck
 	def nDynPresetPath(self, palName, version):
 		"""doc"""
-		presetPath = '/'.join([self.paletteVerDir(palName, version), '_nDynPresets_'])
-		return presetPath
+		presetRepo = '/'.join([self.paletteVerDir(palName, version), '_nDynPresets_'])
+		return presetRepo
 
 	@linkedCheck
-	def importPalette(self, palName, version, binding= False):
+	def importPalette(self, palName, version, binding= False, anim= False, asDelta= False):
 		"""
 		** NOT SUPPORT NAMESPACE **
 		XGen palette will imported without validator.
@@ -220,6 +231,33 @@ class MsXGenHub():
 
 			# import grooming as well
 			self.importGrooming(palName)
+
+		# import as anim, build hairSystem
+		if anim:
+			# build hairSystem
+			self.linkHairSystem(palName)
+			# check preset dir exists
+			presetLocalDir = str(pm.internalVar(userPresetsDir= 1))
+			presetRepo = self.nDynPresetPath(palName, version)
+			if os.path.exists(presetRepo):
+				# copy preset
+				for prs in os.listdir(presetRepo):
+					dstPath = presetLocalDir + os.path.basename(prs)
+					shutil.copyfile(prs, dstPath)
+				# load preset
+				# [note] nucleus preset will not be loaded during current devlope
+				presetMel = []
+				for nodeType in ['hairSystem', 'nRigid']:
+					presetDict = self.ioAttrPreset(nodeType, False)
+					presetMel.extend(presetDict.values())
+				# dump preset
+				for prs in presetMel:
+					os.remove(prs)
+			else:
+				pm.warning('[XGen Hub] : nDynamic attribute presets folder not found.')
+
+		if asDelta:
+			pm.setAttr(palName + '.xgExportAsDelta', 1)
 
 		return palName
 
@@ -415,6 +453,9 @@ class MsXGenHub():
 			for desc in xg.descriptions(palName):
 				# bake Noise modifiers
 				for fxm in xg.fxModules(palName, desc):
+					if xg.fxModuleType(palName, desc, fxm) == 'ClumpingFXModule':
+						# set cvAttr to True, for anim modifiers which needs clump
+						xg.setAttr('cvAttr', 'true', palName, desc, fxm)
 					if xg.fxModuleType(palName, desc, fxm) == 'NoiseFXModule':
 						# temporarily turn off lod so we dont bake it in
 						lod = xg.getAttr('lodFlag', palName, desc)
@@ -438,11 +479,14 @@ class MsXGenHub():
 		# change to export version path and keep current
 		workPath = xg.getAttr('xgDataPath', palName)
 		workProj = xg.getAttr('xgProjectPath', palName)
-		ab = self.paletteVerDir(palName, version, raw= True)
 		xg.setAttr('xgDataPath', self.paletteVerDir(palName, version, raw= True), palName)
 		xg.setAttr('xgProjectPath', self.projPath, palName)
 		# get resolved repo path
 		dataPath = self.paletteVerDir(palName, version)
+
+		# set [xgDogTag] attr for ANIM record branchName
+		if anim:
+			xg.setAttr('xgDogTag', version, palName)
 
 		# export descriptions
 		for desc in xg.descriptions(palName):
@@ -526,14 +570,14 @@ class MsXGenHub():
 			# save out hairSystem preset
 			presetMel = []
 			for nodeType in ['nucleus', 'hairSystem', 'nRigid']:
-				presetDict = self.exportAttrPreset(nodeType)
+				presetDict = self.ioAttrPreset(nodeType, True)
 				presetMel.extend(presetDict.values())
 			# move preset file to version repo
-			presetPath = self.nDynPresetPath(palName, version)
-			if not os.path.exists(presetPath):
-				os.mkdir(presetPath)
+			presetRepo = self.nDynPresetPath(palName, version)
+			if not os.path.exists(presetRepo):
+				os.mkdir(presetRepo)
 			for prs in presetMel:
-				dstPath = '/'.join([presetPath, os.path.basename(prs)])
+				dstPath = '/'.join([presetRepo, os.path.basename(prs)])
 				shutil.move(prs, dstPath)
 
 		# export snapshot
@@ -568,6 +612,39 @@ class MsXGenHub():
 
 		return True
 
+	@linkedCheck
+	def exportAnimPackage(self, palName, shotName):
+		"""doc"""
+		# get version info from [xgDogTag]
+		version = self.getAnimBranch(palName)
+		if not version:
+			pm.error('[XGen Hub] : Couldn\'t get ANIM branch name. Export process stop.')
+			return None
+
+		self.clearPreview()
+		
+		# get resolved repo shotName path
+		deltaPath = self.paletteDeltaDir(palName, version, shotName)
+		if not os.path.exists(deltaPath):
+			os.mkdir(deltaPath)
+		deltaFile = '/'.join([deltaPath, palName + '.xgd'])
+		# export delta
+		xg.createDelta(palName, deltaFile)
+		# get curves and export
+		for desc in xg.descriptions(palName):
+			curvesGrp = pm.ls(desc + '_hairSystemOutputCurves', type= 'transform')
+			if curvesGrp and curvesGrp[0].listRelatives():
+				curves = curvesGrp[0].listRelatives()
+				# cache curves, export as alembic
+				if not pm.pluginInfo('AbcExport', q= 1, l= 1):
+					pm.loadPlugin('AbcExport')
+				start = int(pm.playbackOptions(q= 1, min= 1))
+				end = int(pm.playbackOptions(q= 1, max= 1)) + 1
+				abcCmds = '-frameRange %d %d -uvWrite -worldSpace -dataFormat ogawa ' % (start, end)
+				abcRoot = '-root ' + ' -root '.join([cur.longName() for cur in pm.ls(curves)])
+				abcPath = '/'.join([deltaPath, desc + '.abc'])
+				pm.mel.AbcExport(j= abcCmds + abcRoot + ' -file ' + abcPath)
+
 
 	def linkHairSystem(self, palName):
 		"""doc"""
@@ -595,15 +672,18 @@ class MsXGenHub():
 			pm.warning('[XGen Hub] : Link hairSystem done.')
 
 
-	def exportAttrPreset(self, nodeType):
+	def ioAttrPreset(self, nodeType, save):
 		"""doc"""
-		presetDir = str(pm.internalVar(userPresetsDir= 1))
-		presetVar = presetDir + '%sPreset_%s.mel'
+		presetLocalDir = str(pm.internalVar(userPresetsDir= 1))
+		presetVar = presetLocalDir + '%sPreset_%s.mel'
 		# save out presets
 		presetDict = {}
 		for node in pm.ls(type= nodeType):
 			presetName = node.name()
-			pm.nodePreset(save= [node, presetName])
+			if save:
+				pm.nodePreset(save= [node, presetName])
+			else:
+				pm.nodePreset(load= [node, presetName])
 			presetDict[node.name()] = presetVar % (nodeType, presetName)
 
 		return presetDict

@@ -187,8 +187,11 @@ def ui_main():
 		if msXGenHub.linked and os.listdir(msXGenHub.vsRepo) and pal_optMenu.getItemListLong():
 			palPath = os.path.join(msXGenHub.vsRepo, pal_optMenu.getValue())
 			prefix = msXGenHub.dirAnim
-			verList = [d[len(prefix):-2] for d in os.listdir(palPath) if d.startswith(prefix)]
-			verList = list(set(verList))
+			verList = []
+			if os.path.exists(palPath):
+				#verList = [d[len(prefix):-2] for d in os.listdir(palPath) if d.startswith(prefix)]
+				verList = [d[len(prefix):] for d in os.listdir(palPath) if d.startswith(prefix)]
+				verList = list(set(verList))
 			for ver in verList:
 				pm.menuItem(ver, p= brn_optMenu)
 			if verList:
@@ -381,13 +384,13 @@ def ui_main():
 			
 			# get anim version
 			if expMode == 'ANIM':
-				version = '00'
+				#version = '00'
 				dirAnimKeep = msXGenHub.dirAnim
 				msXGenHub.dirAnim += str(brn_optMenu.getValue())
-				if os.path.exists(palPath):
-					verList = [d for d in os.listdir(palPath) if d.startswith(msXGenHub.dirAnim)]
-					if verList:
-						version = verList[-1][len(msXGenHub.dirAnim):]
+				#if os.path.exists(palPath):
+				#	verList = [d for d in os.listdir(palPath) if d.startswith(msXGenHub.dirAnim)]
+				#	if verList:
+				#		version = verList[-1][len(msXGenHub.dirAnim):]
 
 			# check if get baked version, and we are not going to bake now
 			if not version.isdigit() and not expMode in ['BAKE', 'ANIM']:
@@ -416,7 +419,8 @@ def ui_main():
 					pm.warning('[XGen Hub] : Should Not go Anim without baked version.')
 					return None
 				anim = True
-				version = '%s%02d' % (msXGenHub.dirAnim, int(version) + 1)
+				#version = '%s%02d' % (msXGenHub.dirAnim, int(version) + 1)
+				version = '%s' % (msXGenHub.dirAnim)
 				msXGenHub.dirAnim = dirAnimKeep
 			msXGenHub.exportFullPackage(palName, version, bake, anim)
 		else:
