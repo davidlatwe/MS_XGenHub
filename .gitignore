@@ -62,3 +62,8 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# worktree merge batch
+__publish.bat
+
+Thumbs.db
