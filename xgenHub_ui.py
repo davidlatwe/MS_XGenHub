@@ -21,6 +21,7 @@ import mMaya.mTexture as mTex; reload(mTex)
 import ui;reload(ui)
 import ui.panelMOD as panelMOD; reload(panelMOD)
 import ui.panelSIM as panelSIM; reload(panelSIM)
+import ui.panelVRS as panelVRS; reload(panelVRS)
 
 
 __version__ = xgenHub.__version__
@@ -35,11 +36,11 @@ class MsXGenHubUI(xgenHub.MsXGenHub):
 		# main window
 		self.uiName = 'ms_xgenHub_mainUI'
 		self.uiWidth = 261
-		self.uiHeight = 504
+		self.uiHeight = 521
 		# UI MODE
 		self.MODE = 'SIM'
-		self.MODELIST = ['MOD', 'SIM']
-		self.MODEDICT = {'MOD': True, 'SIM': True}
+		self.MODELIST = ['MOD', 'SIM', 'VRS']
+		self.MODEDICT = {'MOD': True, 'SIM': True, 'VRS': True}
 		# snapshot things
 		self.snapSize = [252, 140]
 		self.snapNull = os.path.dirname(__file__) + '/None.png'
@@ -49,7 +50,8 @@ class MsXGenHubUI(xgenHub.MsXGenHub):
 		self.snapRest = [.36, .36, .36]
 		self.snapBtnn = 'xgenHub_snapShotBtn_UIprefix'
 		# ui placeholder, will be fit in later
-		self.txt_bann = 'banner text'
+		self.txt_ban1 = 'banner text main'
+		self.txt_ban2 = 'banner text sub'
 		self.btn_prev = 'previous mode button'
 		self.btn_next = 'next mode button'
 		self.col_main = 'main columnLayout'
@@ -127,19 +129,25 @@ class MsXGenHubUI(xgenHub.MsXGenHub):
 		if self.MODE == 'SIM':
 			self.makePanel = self.SIMmakePanel
 			self.initPanel = self.SIMinitPanel
+		if self.MODE == 'VRS':
+			self.makePanel = self.VRSmakePanel
+			self.initPanel = self.VRSinitPanel
 			
 		self.makePanel(self.qsb_mode.isChecked())
 
 
 	def initMode(self):
 		"""doc"""
-		pm.text(self.txt_bann, e= 1, l= 'XGen ' + self.MODE)
+		pm.text(self.txt_ban2, e= 1, l= self.MODE)
 		if self.MODE == 'MOD':
 			self.actionSwitch('CHECK  IN', 'CHECK  OUT',
-							[126, 121, 31], [60, 124, 69], self.MODEDICT[self.MODE])
+							[106, 128, 31], [75, 115, 59], self.MODEDICT[self.MODE])
 		if self.MODE == 'SIM':
 			self.actionSwitch('EXPORT', 'IMPORT',
-							[126, 121, 31], [60, 124, 69], self.MODEDICT[self.MODE])
+							[121, 82, 48], [124, 70, 59], self.MODEDICT[self.MODE])
+		if self.MODE == 'VRS':
+			self.actionSwitch('EXPORT', 'IMPORT',
+							[35, 90, 121], [50, 70, 124], self.MODEDICT[self.MODE])
 		self.initAction()
 		self.qsb_mode.toggleCmd = partial(self.initPanel)
 
@@ -167,14 +175,26 @@ class MsXGenHubUI(xgenHub.MsXGenHub):
 		self.col_main = pm.columnLayout(adj= 1)
 
 		# top banner
-		pm.rowLayout(nc= 3, adj= 2)
-		self.btn_prev = pm.button(l= '<', w= 20, c= partial(self.switchMode, True))
-		pm.columnLayout(adj= 1, h= 40)
-		self.txt_bann = pm.text(l= 'XGen ' + self.MODE)
-		QBannerTxt = mqt.convert(self.txt_bann)
-		QBannerTxt.setStyleSheet('QObject {font: bold 26px; color: #222222;}')
+		# main
+		pm.columnLayout(adj= 1)
+		pm.text(l= '', h= 3)
+		self.txt_ban1 = pm.text(l= 'XGen Hub')
+		QBannerTxt1 = mqt.convert(self.txt_ban1)
+		QBannerTxt1.setStyleSheet('QObject {font: bold 12px; color: #222222;}')
 		pm.setParent('..')
-		self.btn_next = pm.button(l= '>', w= 20, c= partial(self.switchMode, False))
+		# sub
+		pm.rowLayout(nc= 5, adj= 3)
+		pm.text(l= '', w= 8)
+		self.btn_prev = pm.iconTextButton(i= 'SP_FileDialogBack_Disabled.png',
+			c= partial(self.switchMode, False))		
+		pm.columnLayout(adj= 1, h= 33)
+		self.txt_ban2 = pm.text(l= self.MODE)
+		QBannerTxt2 = mqt.convert(self.txt_ban2)
+		QBannerTxt2.setStyleSheet('QObject {font: bold 22px; color: #666666;}')
+		pm.setParent('..')
+		self.btn_next = pm.iconTextButton(i= 'SP_FileDialogForward_Disabled.png',
+			c= partial(self.switchMode, True))
+		pm.text(l= '', w= 8)
 		pm.setParent('..')
 		
 		# ----------
@@ -236,6 +256,8 @@ MsXGenHubUI.MODinitPanel = panelMOD.initPanel
 MsXGenHubUI.SIMmakePanel = panelSIM.makePanel
 MsXGenHubUI.SIMinitPanel = panelSIM.initPanel
 
+MsXGenHubUI.VRSmakePanel = panelVRS.makePanel
+MsXGenHubUI.VRSinitPanel = panelVRS.initPanel
 
 if __name__ == '__main__':
 	pass

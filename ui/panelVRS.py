@@ -62,7 +62,7 @@ def makePanel(cls, switch):
 			pm.text(l= '  + ANIM Branch', h= 20)
 			ani_textFd = pm.textField(text= '', w= 100, en= False)
 		else:
-			pm.text(l= '  = ANIM Branch', h= 20)
+			pm.text(l= '  + ANIM Branch', h= 20)
 			brn_opMenu = pm.optionMenu(w= 100)
 		pm.setParent('..')
 	pm.setParent('..')
@@ -79,7 +79,7 @@ def makePanel(cls, switch):
 		# CHD 0
 		pm.columnLayout(cal= 'left')
 		pm.text(l= '  * Shot Name', h= 20)
-		txt_shot = pm.textField(w= 140)
+		txt_shot = pm.textField(w= 140, en= False)
 		pm.setParent('..')
 	pm.setParent('..')
 
@@ -89,7 +89,7 @@ def makePanel(cls, switch):
 	if animRow:
 		# CHD 0
 		pm.columnLayout(cal= 'left')
-		pm.text(l= '  * Shot History', h= 20)
+		pm.text(l= '  = Shot List', h= 20)
 		sht_opMenu = pm.optionMenu(w= 140)
 		pm.setParent('..')
 	pm.setParent('..')
@@ -145,8 +145,10 @@ def makePanel(cls, switch):
 			version = ''
 			if pm.optionMenu(brn_opMenu, q= 1, ill= 1):
 				version = cls.dirAnim + pm.optionMenu(brn_opMenu, q= 1, v= 1)
-			if palName and version:
-				imgPath = cls.snapshotImgPath(palName, version, str(index+1))
+			if pm.optionMenu(sht_opMenu, q= 1, ill= 1):
+				shotName = sht_opMenu.getValue()
+			if palName and version and shotName:
+				imgPath = cls.snapshotImgPath(palName, version, str(index+1), shotName)
 				imgPath = imgPath if os.path.isfile(imgPath) else cls.snapNull
 		pm.image(cls.img_snap, e= 1, i= imgPath)
 		pm.button(cls.snapBtnn + str(index+1), e= 1, bgc= cls.snapShow)

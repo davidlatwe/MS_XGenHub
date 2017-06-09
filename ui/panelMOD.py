@@ -8,9 +8,6 @@ import os
 from functools import partial
 import pymel.core as pm
 
-from .. import mMaya as mMaya; reload(mMaya)
-from ..mMaya import mTexture as mTex; reload(mTex)
-
 
 
 def makePanel(cls, switch):
@@ -109,7 +106,7 @@ def makePanel(cls, switch):
 		pm.setParent('..')
 		# CHD 1
 		pm.columnLayout(w= 104, cal= 'left')
-		pm.text(l= '  * Anim Branch', h= 20)
+		pm.text(l= '  * ANIM Branch', h= 20)
 		brn_optMenu = pm.optionMenu(w= 102)
 		pm.setParent('..')
 	pm.setParent('..')

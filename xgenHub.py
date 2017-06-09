@@ -144,6 +144,10 @@ class MsXGenHub():
 		"""
 		de = xgg.DescriptionEditor
 		if de != None:
+			# stop auto update
+			de.setPlayblast(False)
+			de.updatePreviewControls()
+			# clear all preview
 			de.clearMode = 2
 			de.updateClearControls()
 			de.clearPreview()
@@ -199,6 +203,9 @@ class MsXGenHub():
 		if asDelta and not pm.sceneName():
 			pm.error('[XGen Hub] : Current scene is not saved (), please save first.')
 			return None
+
+		self.clearPreview()
+
 		# check if palette exists in current scene
 		if palName in xg.palettes():
 			# delete current palette folder
@@ -289,6 +296,9 @@ class MsXGenHub():
 		if not os.path.isfile(xdscFile):
 			pm.error('[XGen Hub] : .xdsc file is not exists. -> ' + xdscFile)
 			return None
+
+		self.clearPreview()
+
 		# check if descriptions exists in current scene
 		if descName in xg.descriptions(palName):
 			# delete current description folder
@@ -325,6 +335,8 @@ class MsXGenHub():
 	def importGrooming(self, palName, descName= None, version= None):
 		"""
 		"""
+		self.clearPreview()
+
 		if descName:
 			descs = [descName]
 		else:
@@ -408,6 +420,8 @@ class MsXGenHub():
 	def importGuides(self, palName, descName= None, version= None):
 		"""
 		"""
+		self.clearPreview()
+
 		if descName:
 			descs = [descName]
 		else:
@@ -651,19 +665,8 @@ class MsXGenHub():
 		
 		deltaFile = '/'.join([deltaPath, palName + '.xgd'])
 
-		# change to export version path and keep current
-		#workPath = xg.getAttr('xgDataPath', palName)
-		#workProj = xg.getAttr('xgProjectPath', palName)
-		#xg.setAttr('xgDataPath', self.paletteVerDir(palName, version, raw= True), palName)
-		#xg.setAttr('xgProjectPath', self.projPath, palName)
-
 		# export delta
-		print deltaFile
 		xg.createDelta(palName, deltaFile)
-
-		# restore
-		#xg.setAttr('xgDataPath', workPath, palName)
-		#xg.setAttr('xgProjectPath', workProj, palName)
 
 		# get curves and export
 		for desc in xg.descriptions(palName):
@@ -692,6 +695,8 @@ class MsXGenHub():
 
 	def linkHairSystem(self, palName):
 		"""doc"""
+		self.clearPreview()
+
 		# get active AnimWire module list
 		animWireDict = {}
 		for desc in xg.descriptions():
