@@ -68,7 +68,7 @@ def exportCurvesMel(palName, descName, fxmName):
 	xg.setAttr('exportFaces', '', palName, descName, fxmName)
 	
 
-def xgmMakeCurvesDynamic(descHairSysName):
+def xgmMakeCurvesDynamic(descHairSysName, collide):
 	"""
 	Create nHairSystem with good name before MakeCurvesDynamic
 	and without optionBox UI
@@ -98,7 +98,7 @@ def xgmMakeCurvesDynamic(descHairSysName):
 	# re-select curves, mesh and hairSystem
 	pm.select(keepSele, r= 1)
 	# trun on 'Collide With Mesh'
-	pm.optionVar(intValue= ['makeCurvesDynamicCollideWithMesh', 1])
+	pm.optionVar(intValue= ['makeCurvesDynamicCollideWithMesh', int(collide)])
 	# MakeCurvesDynamic callback
 	pm.mel.eval('makeCurvesDynamic 2 { "1", "1", "1", "1", "0"}')
 

@@ -12,12 +12,12 @@ import pymel.core as pm
 import mQtGui; reload(mQtGui)
 import mQtGui.muiSwitchBox as mqsb; reload(mqsb)
 import mQtGui.mGetQt as mqt; reload(mqt)
-import mMaya; reload(mMaya)
-import mMaya.mTexture as mTex; reload(mTex)
+
 import xgenHub; reload(xgenHub)
 
 import ui;reload(ui)
 import ui.panelMOD as panelMOD; reload(panelMOD)
+import ui.panelSIM as panelSIM; reload(panelSIM)
 
 
 __version__ = xgenHub.__version__
@@ -34,8 +34,9 @@ class MsXGenHubUI(xgenHub.MsXGenHub):
 		self.uiWidth = 261
 		self.uiHeight = 504
 		# UI MODE
-		self.MODE = 'MOD'
-		self.DEFAULT = {'MOD': True}
+		self.MODE = 'SIM'
+		self.MODELIST = ['MOD', 'SIM']
+		self.MODEDICT = {'MOD': True, 'SIM': True}
 		# snapshot things
 		self.snapSize = [252, 140]
 		self.snapNull = os.path.dirname(__file__) + '/None.png'
@@ -45,6 +46,9 @@ class MsXGenHubUI(xgenHub.MsXGenHub):
 		self.snapRest = [.36, .36, .36]
 		self.snapBtnn = 'xgenHub_snapShotBtn_UIprefix'
 		# ui placeholder, will be fit in later
+		self.txt_bann = 'banner text'
+		self.btn_prev = 'previous mode button'
+		self.btn_next = 'next mode button'
 		self.col_main = 'main columnLayout'
 		self.col_acts = 'action switch columnLayout'
 		self.col_acth = 'hold action switch columnLayout'
@@ -80,6 +84,30 @@ class MsXGenHubUI(xgenHub.MsXGenHub):
 		pm.setParent('..')
 
 
+	def snapshot_take(self, index, *args):
+		"""
+		Take snapshots before export.
+		"""
+		oriPath = pm.image(self.img_snap, q= 1, i= 1)
+		tmpPath = self.snapshotTmp % (index+1)
+		if not os.path.isfile(tmpPath) or oriPath == tmpPath:
+			if not os.path.exists(os.path.dirname(tmpPath)):
+				os.mkdir(os.path.dirname(tmpPath))
+			pm.refresh(cv= True, fe= self.snapshotExt, fn= tmpPath)
+			snapImg = mTex.MQImage(tmpPath)
+			snapImg = mTex.resizeImage(snapImg, self.snapSize, True)
+			snapImg = mTex.extendImage(snapImg, self.snapSize, self.snapExtn)
+			snapImg = mTex.paintTextWatermark(snapImg, str(index+1), [20, 40], [10, 10, 10, 255])
+			snapImg.save(tmpPath)
+			pm.button(self.snapBtnn + str(index+1), e= 1, bgc= self.snapTake)
+		else:
+			pm.button(self.snapBtnn + str(index+1), e= 1, bgc= self.snapShow)
+		pm.image(self.img_snap, e= 1, i= tmpPath)
+		for i in range(5):
+			if not i == index:
+				pm.button(self.snapBtnn + str(i+1), e= 1, bgc= self.snapRest)
+
+
 	def snapshot_clear(self):
 		"""doc"""
 		for i in range(5):
@@ -93,17 +121,34 @@ class MsXGenHubUI(xgenHub.MsXGenHub):
 		if self.MODE == 'MOD':
 			self.makePanel = self.MODmakePanel
 			self.initPanel = self.MODinitPanel
+		if self.MODE == 'SIM':
+			self.makePanel = self.SIMmakePanel
+			self.initPanel = self.SIMinitPanel
 			
 		self.makePanel(self.qsb_mode.isChecked())
 
 
 	def initMode(self):
 		"""doc"""
+		pm.text(self.txt_bann, e= 1, l= 'XGen ' + self.MODE)
 		if self.MODE == 'MOD':
 			self.actionSwitch('CHECK  IN', 'CHECK  OUT',
-							[126, 121, 31], [60, 124, 69], self.DEFAULT[self.MODE])
+							[126, 121, 31], [60, 124, 69], self.MODEDICT[self.MODE])
+		if self.MODE == 'SIM':
+			self.actionSwitch('EXPORT', 'IMPORT',
+							[126, 121, 31], [60, 124, 69], self.MODEDICT[self.MODE])
 		self.initAction()
 		self.qsb_mode.toggleCmd = partial(self.initPanel)
+
+
+	def switchMode(self, nextMode, *args):
+		"""doc"""
+		current = self.MODELIST.index(self.MODE)
+		if nextMode:
+			self.MODE = self.MODELIST[(current + 1) % len(self.MODELIST)]
+		else:
+			self.MODE = self.MODELIST[(current - 1) % len(self.MODELIST)]
+		self.initMode()
 
 
 	def showUI(self):
@@ -118,10 +163,14 @@ class MsXGenHubUI(xgenHub.MsXGenHub):
 		self.col_main = pm.columnLayout(adj= 1)
 
 		# top banner
+		pm.rowLayout(nc= 3, adj= 2)
+		self.btn_prev = pm.button(l= '<', w= 20, c= partial(self.switchMode, True))
 		pm.columnLayout(adj= 1, h= 40)
-		bannerTxt = pm.text(l= 'XGen Hub')
-		QBannerTxt = mqt.convert(bannerTxt)
+		self.txt_bann = pm.text(l= 'XGen ' + self.MODE)
+		QBannerTxt = mqt.convert(self.txt_bann)
 		QBannerTxt.setStyleSheet('QObject {font: bold 26px; color: #222222;}')
+		pm.setParent('..')
+		self.btn_next = pm.button(l= '>', w= 20, c= partial(self.switchMode, False))
 		pm.setParent('..')
 		
 		# ----------
@@ -150,7 +199,7 @@ class MsXGenHubUI(xgenHub.MsXGenHub):
 		pm.columnLayout(adj= 1, cal= 'center')
 		pm.text(l= '  [ Snapshots ]  ', h= 20)
 		pm.columnLayout(adj= 1, h= 142, cal= 'center')
-		self.img_snap = pm.image(i= snapshot_empty)
+		self.img_snap = pm.image(i= self.snapNull)
 		pm.setParent('..')
 		pm.text(l= '', h= 2)
 		pm.rowLayout(nc= 5)
@@ -179,6 +228,9 @@ class MsXGenHubUI(xgenHub.MsXGenHub):
 
 MsXGenHubUI.MODmakePanel = panelMOD.makePanel
 MsXGenHubUI.MODinitPanel = panelMOD.initPanel
+
+MsXGenHubUI.SIMmakePanel = panelSIM.makePanel
+MsXGenHubUI.SIMinitPanel = panelSIM.initPanel
 
 
 if __name__ == '__main__':

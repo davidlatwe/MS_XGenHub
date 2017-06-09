@@ -168,10 +168,14 @@ class MsXGenHub():
 				return 'Attribute'
 	
 	@linkedCheck
-	def snapshotImgPath(self, palName, version, index):
+	def snapshotImgPath(self, palName, version, index, shotName= None):
 		"""doc"""
-		imgName = '_'.join([palName, version, str(index)]) + self.snapshotExt
-		imgPath = '/'.join([self.paletteVerDir(palName, version), '_snapshot_', imgName])
+		if shotName:
+			imgName = '_'.join([palName, shotName, str(index)]) + self.snapshotExt
+			imgPath = '/'.join([self.paletteDeltaDir(palName, version, shotName), '_snapshot_', imgName])
+		else:
+			imgName = '_'.join([palName, version, str(index)]) + self.snapshotExt
+			imgPath = '/'.join([self.paletteVerDir(palName, version), '_snapshot_', imgName])
 		return imgPath
 
 	@linkedCheck
@@ -648,6 +652,15 @@ class MsXGenHub():
 				abcPath = '/'.join([deltaPath, desc + '.abc'])
 				pm.mel.AbcExport(j= abcCmds + abcRoot + ' -file ' + abcPath)
 
+		# export snapshot
+		for i in range(5):
+			tmpPath = self.snapshotTmp % (i+1)
+			if os.path.isfile(tmpPath):
+				imgPath = self.snapshotImgPath(palName, version, str(i+1), shotName)
+				if not os.path.exists(os.path.dirname(imgPath)):
+					os.mkdir(os.path.dirname(imgPath))
+				shutil.move(tmpPath, imgPath)
+
 
 	def linkHairSystem(self, palName):
 		"""doc"""
@@ -669,7 +682,7 @@ class MsXGenHub():
 			pm.warning('[XGen Hub] : Building hairSystem for description: %s, FXModule: %s' % (desc, fxm))
 			descHairSysName = self.getHairSysName(desc)
 			msxgAwt.exportCurvesMel(palName, desc, fxm)
-			meshPatch = msxgAwt.xgmMakeCurvesDynamic(descHairSysName)
+			meshPatch = msxgAwt.xgmMakeCurvesDynamic(descHairSysName, False)
 			msxgAwt.nRigidRename(meshPatch, self.getRigidNameVar())
 			msxgAwt.attachSlot(palName, desc, fxm, descHairSysName)
 			pm.warning('[XGen Hub] : Link hairSystem done.')
