@@ -249,7 +249,8 @@ class MsXGenHub():
 			if os.path.exists(presetRepo):
 				# copy preset
 				for prs in os.listdir(presetRepo):
-					dstPath = presetLocalDir + os.path.basename(prs)
+					dstPath = presetLocalDir + prs
+					prs = '/'.join([presetRepo, prs])
 					shutil.copyfile(prs, dstPath)
 				# load preset
 				# [note] nucleus preset will not be loaded during current devlope
@@ -586,6 +587,10 @@ class MsXGenHub():
 			for prs in presetMel:
 				dstPath = '/'.join([presetRepo, os.path.basename(prs)])
 				shutil.move(prs, dstPath)
+			# create empty _shot_ folder
+			shotDir = self.paletteDeltaDir(palName, version, '')
+			if not os.path.exists(shotDir):
+				os.mkdir(shotDir)
 
 		# export snapshot
 		for i in range(5):
@@ -634,9 +639,23 @@ class MsXGenHub():
 		deltaPath = self.paletteDeltaDir(palName, version, shotName)
 		if not os.path.exists(deltaPath):
 			os.mkdir(deltaPath)
+		
 		deltaFile = '/'.join([deltaPath, palName + '.xgd'])
+
+		# change to export version path and keep current
+		workPath = xg.getAttr('xgDataPath', palName)
+		workProj = xg.getAttr('xgProjectPath', palName)
+		xg.setAttr('xgDataPath', self.paletteVerDir(palName, version, raw= True), palName)
+		xg.setAttr('xgProjectPath', self.projPath, palName)
+
 		# export delta
+		print deltaFile
 		xg.createDelta(palName, deltaFile)
+
+		# restore
+		xg.setAttr('xgDataPath', workPath, palName)
+		xg.setAttr('xgProjectPath', workProj, palName)
+
 		# get curves and export
 		for desc in xg.descriptions(palName):
 			curvesGrp = pm.ls(desc + '_hairSystemOutputCurves', type= 'transform')

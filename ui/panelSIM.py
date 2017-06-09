@@ -106,19 +106,20 @@ def makePanel(cls, switch):
 
 	def snapshot_show(index, *args):
 		"""doc"""
-		if pm.optionMenu(brn_opMenu, q= 1, ill= 1):
-			imgPath = cls.snapNull
-			if cls.linked and os.listdir(cls.vsRepo):
-				palName = pal_opMenu.getValue()
+		imgPath = cls.snapNull
+		if cls.linked and os.listdir(cls.vsRepo) and pal_opMenu.getItemListLong():
+			palName = pal_opMenu.getValue()
+			version = ''
+			if pm.optionMenu(brn_opMenu, q= 1, ill= 1):
 				version = cls.dirAnim + pm.optionMenu(brn_opMenu, q= 1, v= 1)
-				if palName and version:
-					imgPath = cls.snapshotImgPath(palName, version, str(index+1))
-					imgPath = imgPath if os.path.isfile(imgPath) else cls.snapNull
-			pm.image(cls.img_snap, e= 1, i= imgPath)
-			pm.button(cls.snapBtnn + str(index+1), e= 1, bgc= cls.snapShow)
-			for i in range(5):
-				if not i == index:
-					pm.button(cls.snapBtnn + str(i+1), e= 1, bgc= cls.snapRest)
+			if palName and version:
+				imgPath = cls.snapshotImgPath(palName, version, str(index+1))
+				imgPath = imgPath if os.path.isfile(imgPath) else cls.snapNull
+		pm.image(cls.img_snap, e= 1, i= imgPath)
+		pm.button(cls.snapBtnn + str(index+1), e= 1, bgc= cls.snapShow)
+		for i in range(5):
+			if not i == index:
+				pm.button(cls.snapBtnn + str(i+1), e= 1, bgc= cls.snapRest)
 
 	def process(mqsb, *args):
 		"""doc"""
@@ -158,7 +159,7 @@ def makePanel(cls, switch):
 				return None
 
 			palName = str(pal_opMenu.getValue())
-			version = str(brn_opMenu.getValue())
+			version = cls.dirAnim + str(brn_opMenu.getValue())
 			cls.importPalette(palName, version, False, True, True)
 
 

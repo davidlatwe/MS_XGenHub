@@ -15,6 +15,9 @@ import mQtGui.mGetQt as mqt; reload(mqt)
 
 import xgenHub; reload(xgenHub)
 
+import mMaya as mMaya; reload(mMaya)
+import mMaya.mTexture as mTex; reload(mTex)
+
 import ui;reload(ui)
 import ui.panelMOD as panelMOD; reload(panelMOD)
 import ui.panelSIM as panelSIM; reload(panelSIM)
@@ -149,6 +152,7 @@ class MsXGenHubUI(xgenHub.MsXGenHub):
 		else:
 			self.MODE = self.MODELIST[(current - 1) % len(self.MODELIST)]
 		self.initMode()
+		self.initPanel()
 
 
 	def showUI(self):
