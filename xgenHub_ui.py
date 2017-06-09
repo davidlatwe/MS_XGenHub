@@ -16,455 +16,170 @@ import mMaya; reload(mMaya)
 import mMaya.mTexture as mTex; reload(mTex)
 import xgenHub; reload(xgenHub)
 
-
-windowTitle = 'XGen Hub - v1.0 Alpha'
-windowName = 'ms_xgenHub_mainUI'
-column_main = windowName + '_main_column'
-column_linkArea = windowName + '_linkArea_column'
-
-windowWidth = 261
-windowHeight = 504
-snapshotSize = [252, 140]
-snapshot_empty = os.path.dirname(__file__) + '/None.png'
-snapshot_extnQ = [80, 80, 80, 255]
-snapshot_showC = [.22, .46, .34]
-snapshot_takeC = [.48, .25, .28]
-snapshot_restC = [.36, .36, .36]
+import ui;reload(ui)
+import ui.panelMOD as panelMOD; reload(panelMOD)
 
 
-def ui_main():
-	"""
-	"""	
-	if pm.window(windowName, q= 1, ex= 1):
-		pm.deleteUI(windowName)
-	
-	msXGenHub = xgenHub.MsXGenHub()
-
-	pm.window(windowName, t= windowTitle, s= 0, mxb= 0, mnb= 0)
-	pm.columnLayout(column_main, adj= 1)
-
-	bannerArea = pm.columnLayout(adj= 1, h= 40)
-	bannerTxt = pm.text(l= 'XGen Hub')
-	QBannerTxt = mqt.convert(bannerTxt)
-	QBannerTxt.setStyleSheet('QObject {font: bold 26px; color: #222222;}')
-	pm.setParent('..')
-	pm.text(l= '', h= 4)
-	pm.separator()
-	pm.text(l= '', h= 2)
-	pm.setParent('..')
-
-	pm.columnLayout(column_linkArea, adj= 1, cal= 'left')
-	pm.text(l= '  - XGenHub Repository Root', h= 22)
-	pm.rowLayout(nc= 2, adj= 1)
-	repoPath_textF = pm.textField(text= msXGenHub.projPath, ed= False)
-	repoLink_icBtn = pm.iconTextButton(i= 'syncOn.png', w= 20, h= 20)
-	pm.setParent('..')
-
-	pm.columnLayout()
-	pm.text(l= ' - Action Mode', h= 20)
-	cmA= pm.columnLayout()
-	mode_mqsb = mqsb.SwitchBox(onl= 'CHECK  IN', ofl= 'CHECK  OUT',
-		w= windowWidth - 6, h= 35, onbg= [126, 121, 31], ofbg= [60, 124, 69], v= True, p= cmA)
-	pm.setParent('..')
-	pm.setParent('..')
-
-	pm.text(l= '', h= 6)
-	pm.separator()
-	pm.text(l= '', h= 4)
-
-	pm.rowLayout(nc= 2, adj= 1)
-	
-	pm.columnLayout(cal= 'left')
-	pm.text(l= '  + Collection', h= 20)
-	pal_optMenu = pm.optionMenu(w= 140)
-	pm.setParent('..')
-
-	holder_col = pm.columnLayout(w= 104, cal= 'left')
-	pm.setParent('..')
-
-	pm.setParent('..')
-
-	descOptionZone = pm.rowLayout(nc= 2, adj= 1, en= False)
-
-	pm.columnLayout(cal= 'left')
-	pm.text(l= '  * Description', h= 20)
-	des_optMenu = pm.optionMenu(w= 140)
-	pm.setParent('..')
-
-	pm.columnLayout(w= 104, cal= 'left')
-	pm.text(l= '  * Content', h= 20)
-	cnt_optMenu = pm.optionMenu(w= 102)
-	pm.menuItem('description')
-	pm.menuItem('groom only')
-	pm.menuItem('guides only')
-	pm.setParent('..')
-
-	pm.setParent('..')
+__version__ = xgenHub.__version__
+__uititle__ = 'XGen Hub - v%s' % __version__
 
 
-	checkInToolZone = pm.rowLayout(nc= 2, adj= 1, en= False)
-
-	pm.columnLayout(cal= 'left')
-	pm.text(l= '  * AnimWire Ready', h= 20)
-	linkHairSysBtn = pm.button(l= 'Link Hair System', h= 19, w= 140)
-	pm.setParent('..')
-
-	pm.columnLayout(w= 104, cal= 'left')
-	pm.text(l= '  * Anim Branch', h= 20)
-	brn_optMenu = pm.optionMenu(w= 102)
-	pm.setParent('..')
-
-	pm.setParent('..')
-
-
-	pm.columnLayout(adj= 1, cal= 'center')
-	pm.text(l= '  [ Snapshots ]  ', h= 20)
-	pm.columnLayout(adj= 1, h= 142, cal= 'center')
-	snapShot_pic = pm.image(i= snapshot_empty)
-	pm.setParent('..')
-	pm.text(l= '', h= 2)
-	pm.rowLayout(nc= 5)
-	for i in range(5):
-		pm.button('xgenHub_snapShotBtn' + str(i+1), l= str(i+1), w= 49)
-	pm.setParent('..')
-	pm.setParent('..')
-
-	pm.text(l= '', h= 4)
-	pm.separator()
-	pm.text(l= '', h= 2)
-
-	pm.columnLayout(adj= 1)
-	proc_btn = pm.button(l= 'P R O C E E D', h= 45, bgc= [0.25, 0.46, 0.49])
-	pm.setParent('..')
-
-	# COMMANDS AND FUNCTIONS
-
-	ver_opMenu = windowName + 'ver_opMenu'
-	exp_opMenu = windowName + 'exp_opMenu'
-	ver_column = windowName + '_ver_column'
-	exp_column = windowName + '_exp_column'
-	def clearBoth():
+class MsXGenHubUI(xgenHub.MsXGenHub):
+	"""doc"""
+	def __init__(self):
 		"""doc"""
-		def snapshot_clear():
-			"""doc"""
-			for i in range(5):
-				tmpPath = msXGenHub.snapshotTmp % (i+1)
-				if os.path.isfile(tmpPath):
-					os.remove(tmpPath)
-		
-		if pm.columnLayout(ver_column, q= 1, ex= 1):
-			pm.deleteUI(ver_column)
-		if pm.columnLayout(exp_column, q= 1, ex= 1):
-			pm.deleteUI(exp_column)
-		
-		if pal_optMenu.getItemListLong():
-			pal_optMenu.clear()
-		if des_optMenu.getItemListLong():
-			des_optMenu.clear()
-		pm.menuItem('All descriptions', p= des_optMenu)
-		
-		pm.image(snapShot_pic, e= 1, i= snapshot_empty)
-		snapshot_clear()
+		xgenHub.MsXGenHub.__init__(self)
+		# main window
+		self.uiName = 'ms_xgenHub_mainUI'
+		self.uiWidth = 261
+		self.uiHeight = 504
+		# UI MODE
+		self.MODE = 'MOD'
+		self.DEFAULT = {'MOD': True}
+		# snapshot things
+		self.snapSize = [252, 140]
+		self.snapNull = os.path.dirname(__file__) + '/None.png'
+		self.snapExtn = [80, 80, 80, 255]
+		self.snapShow = [.22, .46, .34]
+		self.snapTake = [.48, .25, .28]
+		self.snapRest = [.36, .36, .36]
+		self.snapBtnn = 'xgenHub_snapShotBtn_UIprefix'
+		# ui placeholder, will be fit in later
+		self.col_main = 'main columnLayout'
+		self.col_acts = 'action switch columnLayout'
+		self.col_acth = 'hold action switch columnLayout'
+		self.qsb_mode = 'action switch'
+		self.col_oper = 'operation panel columnLayout'
+		self.txf_repo = 'repo path textfield'
+		self.btn_link = 'repo link button'
+		self.img_snap = 'snapshot image'
+		self.proc_btn = 'final execute button'
 
-	def init_checkIn():
+
+	def linkRepoDir(self):
 		"""doc"""
-		pm.columnLayout(exp_column, cal= 'left', p= holder_col)
-		pm.text(l= '  + Version', h= 20)
-		pm.optionMenu(exp_opMenu, w= 100)
-		pm.menuItem('BUMP')
-		pm.menuItem('SAVE')
-		pm.menuItem('BAKE')
-		pm.menuItem('ANIM')
-		pm.setParent('..')
-		pm.rowLayout(descOptionZone, e= 1, en= False, vis= False)
-		pm.rowLayout(checkInToolZone, e= 1, en= False, vis= True)
-
-		for pal in pm.ls(type= 'xgmPalette'):
-			pm.menuItem(pal.name(), p= pal_optMenu)
-
-		if brn_optMenu.getItemListLong():
-			brn_optMenu.clear()
-		if msXGenHub.linked and os.listdir(msXGenHub.vsRepo) and pal_optMenu.getItemListLong():
-			palPath = os.path.join(msXGenHub.vsRepo, pal_optMenu.getValue())
-			prefix = msXGenHub.dirAnim
-			verList = []
-			if os.path.exists(palPath):
-				#verList = [d[len(prefix):-2] for d in os.listdir(palPath) if d.startswith(prefix)]
-				verList = [d[len(prefix):] for d in os.listdir(palPath) if d.startswith(prefix)]
-				verList = list(set(verList))
-			for ver in verList:
-				pm.menuItem(ver, p= brn_optMenu)
-			if verList:
-				pm.menuItem('Add New..', p= brn_optMenu)
-			else:
-				pm.menuItem('BASE', p= brn_optMenu)
-
-		def animToolEnable(*args):
-			"""doc"""
-			mode = pm.optionMenu(exp_opMenu, q= 1, v= 1)
-			if mode == 'ANIM':
-				pm.rowLayout(checkInToolZone, e= 1, en= True, vis= True)
-			else:
-				pm.rowLayout(checkInToolZone, e= 1, en= False, vis= True)
-		pm.optionMenu(exp_opMenu, e= 1, cc= animToolEnable)
-
-		def addAnimBranch(*args):
-			"""doc"""
-			if not brn_optMenu.getValue() == 'Add New..':
-				return
-			result = pm.promptDialog(title= "New Anim Branch", message= "Enter Name:",
-    			button= ["OK", "Cancel"], defaultButton= "OK", cancelButton= "Cancel",
-    			dismissString= "Cancel")
-			if result == "OK":
-				branch = pm.promptDialog(query= 1, text= 1)
-				pm.menuItem(branch, ia= '', p= brn_optMenu)
-				brn_optMenu.setValue(branch)
-
-		pm.optionMenu(brn_optMenu, e= 1, cc= addAnimBranch)
-
-		def snapshot_take(index, *args):
-			"""
-			Take snapshots before export.
-			"""
-			oriPath = pm.image(snapShot_pic, q= 1, i= 1)
-			tmpPath = msXGenHub.snapshotTmp % (index+1)
-			if not os.path.isfile(tmpPath) or oriPath == tmpPath:
-				if not os.path.exists(os.path.dirname(tmpPath)):
-					os.mkdir(os.path.dirname(tmpPath))
-				pm.refresh(cv= True, fe= msXGenHub.snapshotExt, fn= tmpPath)
-				snapImg = mTex.MQImage(tmpPath)
-				snapImg = mTex.resizeImage(snapImg, snapshotSize, True)
-				snapImg = mTex.extendImage(snapImg, snapshotSize, snapshot_extnQ)
-				snapImg = mTex.paintTextWatermark(snapImg, str(index+1), [20, 40], [10, 10, 10, 255])
-				snapImg.save(tmpPath)
-				pm.button('xgenHub_snapShotBtn' + str(index+1), e= 1, bgc= snapshot_takeC)
-			else:
-				pm.button('xgenHub_snapShotBtn' + str(index+1), e= 1, bgc= snapshot_showC)
-			pm.image(snapShot_pic, e= 1, i= tmpPath)
-			for i in range(5):
-				if not i == index:
-					pm.button('xgenHub_snapShotBtn' + str(i+1), e= 1, bgc= snapshot_restC)
-
-		for i in range(5):
-			pm.button('xgenHub_snapShotBtn' + str(i+1), e= 1, en= 1, c= partial(snapshot_take, i),
-				bgc= snapshot_restC)
-
-	def init_checkOut():
-		"""doc"""
-		pm.columnLayout(ver_column, cal= 'left', p= holder_col)
-		pm.text(l= '  = Version', h= 20)
-		pm.optionMenu(ver_opMenu, w= 100)
-		pm.setParent('..')
-		pm.rowLayout(descOptionZone, e= 1, en= True, vis= True)
-		pm.rowLayout(checkInToolZone, e= 1, en= False, vis= False)
-
-		if msXGenHub.linked:
-			palList = os.listdir(msXGenHub.vsRepo)
-			for pal in palList:
-				if os.path.isdir(os.path.join(msXGenHub.vsRepo, pal)):
-					pm.menuItem(pal, p= pal_optMenu)
-				
-		def versionList():
-			"""doc"""
-			for item in pm.optionMenu(ver_opMenu, q= 1, ill= 1):
-				pm.deleteUI(item)
-			if msXGenHub.linked and os.listdir(msXGenHub.vsRepo):
-				palPath = os.path.join(msXGenHub.vsRepo, pal_optMenu.getValue())
-				verList = [d for d in os.listdir(palPath) if not d.startswith(msXGenHub.dirAnim)]
-				verList.reverse()
-				for ver in verList:
-					pm.menuItem(ver, p= ver_opMenu)
-
-		def descriptionList():
-			"""doc"""
-			if des_optMenu.getItemListLong():
-				des_optMenu.clear()
-			pm.menuItem('All descriptions', p= des_optMenu)
-			if msXGenHub.linked and os.listdir(msXGenHub.vsRepo):
-				palName = pal_optMenu.getValue()
-				version = pm.optionMenu(ver_opMenu, q= 1, v= 1)
-				palVerPath = os.path.join(msXGenHub.vsRepo, palName, version)
-				if msXGenHub.linked and os.path.isdir(palVerPath):
-					for desc in os.listdir(palVerPath):
-						if os.path.isdir(os.path.join(palVerPath, desc)) and not desc == '_snapshot_':
-							pm.menuItem(desc, p= des_optMenu)
-			else:
-				pm.rowLayout(descOptionZone, e= 1, en= False)
-				for i in range(5):
-					pm.button('xgenHub_snapShotBtn' + str(i+1), e= 1, en= 0)
-
-		def snapshot_show(index, *args):
-			"""doc"""
-			imgPath = snapshot_empty
-			if msXGenHub.linked and os.listdir(msXGenHub.vsRepo):
-				palName = pal_optMenu.getValue()
-				version = pm.optionMenu(ver_opMenu, q= 1, v= 1)
-				if palName and version:
-					imgPath = msXGenHub.snapshotImgPath(palName, version, str(index+1))
-					imgPath = imgPath if os.path.isfile(imgPath) else snapshot_empty
-			pm.image(snapShot_pic, e= 1, i= imgPath)
-			pm.button('xgenHub_snapShotBtn' + str(index+1), e= 1, bgc= snapshot_showC)
-			for i in range(5):
-				if not i == index:
-					pm.button('xgenHub_snapShotBtn' + str(i+1), e= 1, bgc= snapshot_restC)
-		
-		for i in range(5):
-			pm.button('xgenHub_snapShotBtn' + str(i+1), e= 1, c= partial(snapshot_show, i))
-		
-		def descAndVerAndSnapshot(*args):
-			"""doc"""
-			versionList()
-			descriptionList()
-			snapshot_show(0)
-		pm.optionMenu(pal_optMenu, e= 1, cc= descAndVerAndSnapshot)
-
-		def descAndSnapshot(*args):
-			"""doc"""
-			descriptionList()
-			snapshot_show(0)
-		pm.optionMenu(ver_opMenu, e= 1, cc= descAndSnapshot)
-
-		# load version
-		versionList()
-		# load description
-		descriptionList()
-		# load snapshot
-		snapshot_show(0)
-
-	def actModeShift(mqsb):
-		"""doc"""
-		clearBoth()
-		if mqsb.isChecked():
-			init_checkIn()
-		else:
-			init_checkOut()
-		pm.window(windowName, e= 1, w= windowWidth, h= windowHeight)
-	mode_mqsb.toggleCmd = partial(actModeShift, mode_mqsb)
-
-	def linkRepoDir(*args):
-		"""doc"""
-		result = pm.fileDialog2(cap= 'Select Server Project Folder', fm= 3, okc= 'Select', dir= pm.workspace(q= 1, rd= 1))
+		result = pm.fileDialog2(cap= 'Select Server Project Folder',
+			fm= 3, okc= 'Select', dir= pm.workspace(q= 1, rd= 1))
 		if result:
-			msXGenHub.initVersionRepo(result[0])
-			pm.textField(repoPath_textF, e= 1, text= msXGenHub.projPath)
+			self.initVersionRepo(result[0])
+			pm.textField(self.txf_repo, e= 1, text= self.projPath)
 			# init option menus
-			actModeShift(mode_mqsb)
-	repoLink_icBtn.setCommand(partial(linkRepoDir))
+			self.initPanel()
 
-	def linkHairSys(*args):
+
+	def actionSwitch(self, onLabel, offLabel, onColor, offColor, default):
 		"""doc"""
-		palName = str(pal_optMenu.getValue())
-		msXGenHub.linkHairSystem(palName)
+		if pm.columnLayout(self.col_acth, q= 1, ex= 1):
+			pm.deleteUI(self.col_acth)
 
-	linkHairSysBtn.setCommand(linkHairSys)
+		self.col_acth = pm.columnLayout(p= self.col_acts)
+		pm.text(l= ' - Action Mode', h= 20)
+		cmA= pm.columnLayout()
+		self.qsb_mode = mqsb.SwitchBox(onl= onLabel, ofl= offLabel,
+			w= self.uiWidth - 6, h= 35, onbg= onColor, ofbg= offColor, v= default, p= cmA)
+		pm.setParent('..')
 
-	def process(mqsb, *args):
+
+	def snapshot_clear(self):
 		"""doc"""
-		if mqsb.isChecked():
-			# export
-			if not pal_optMenu.getNumberOfItems():
-				pm.warning('[XGen Hub] : There are no collections in current scene.')
-				return None
-			palName = str(pal_optMenu.getValue())
-			expMode = pm.optionMenu(exp_opMenu, q= 1, v= 1)
-			newWork = True
-			noBaked = True
-			version = '000'
-			verList = []
-			bake = False
-			anim = False
+		for i in range(5):
+			tmpPath = self.snapshotTmp % (i+1)
+			if os.path.isfile(tmpPath):
+				os.remove(tmpPath)
+
+
+	def initAction(self):
+		"""doc"""
+		if self.MODE == 'MOD':
+			self.makePanel = self.MODmakePanel
+			self.initPanel = self.MODinitPanel
 			
-			palPath = os.path.join(msXGenHub.vsRepo, palName)
-			if os.path.exists(palPath):
-				verList = [d for d in os.listdir(palPath) if not d.startswith(msXGenHub.dirAnim)]
-				if verList:
-					version = verList[-1][1:]
-					newWork = False
-					noBaked = False if msXGenHub.dirBake in verList else True
-			
-			# get anim version
-			if expMode == 'ANIM':
-				#version = '00'
-				dirAnimKeep = msXGenHub.dirAnim
-				msXGenHub.dirAnim += str(brn_optMenu.getValue())
-				#if os.path.exists(palPath):
-				#	verList = [d for d in os.listdir(palPath) if d.startswith(msXGenHub.dirAnim)]
-				#	if verList:
-				#		version = verList[-1][len(msXGenHub.dirAnim):]
+		self.makePanel(self.qsb_mode.isChecked())
 
-			# check if get baked version, and we are not going to bake now
-			if not version.isdigit() and not expMode in ['BAKE', 'ANIM']:
-				# jump back to previous version
-				version = verList[-2][1:]
-				if not version.isdigit():
-					# one palette should have one baked version only
-					pm.error('[XGen Hub] : Version Repo Error. Export Mode: [%s]' % expMode)
 
-			# set version
-			if expMode == 'BUMP':
-				version = 'v%03d' % (int(version) + 1)
-			if expMode == 'SAVE':
-				version = 'v%03d' % (int(version) + 1 if newWork else 0)
-			if expMode == 'BAKE':
-				if newWork:
-					pm.warning('[XGen Hub] : Should Not Bake with no version backup.')
-					return None
-				bake = True
-				version = msXGenHub.dirBake
-			if expMode == 'ANIM':
-				if newWork:
-					pm.warning('[XGen Hub] : Should Not go Anim with no version backup.')
-					return None
-				if noBaked:
-					pm.warning('[XGen Hub] : Should Not go Anim without baked version.')
-					return None
-				anim = True
-				#version = '%s%02d' % (msXGenHub.dirAnim, int(version) + 1)
-				version = '%s' % (msXGenHub.dirAnim)
-				msXGenHub.dirAnim = dirAnimKeep
-			msXGenHub.exportFullPackage(palName, version, bake, anim)
-		else:
-			# import
-			# simple check if geo selected
-			geoSelected = False
-			if pm.ls(sl= 1):
-				for dag in pm.ls(sl= 1):
-					if dag.type() == 'transform':
-						for shp in dag.getShapes():
-							if shp.type() == 'mesh':
-								geoSelected = True
-								break
-					if geoSelected:
-						break
-			if not geoSelected:
-				pm.warning('[XGen Hub] : Please select a geometry.')
-				return None
-			impType = cnt_optMenu.getValue()
-			palName = str(pal_optMenu.getValue())
-			descName = str(des_optMenu.getValue())
-			version = str(pm.optionMenu(ver_opMenu, q= 1, v= 1))
-			bake = True if version == msXGenHub.dirBake else False
-			if descName == 'All descriptions':
-				if impType == 'description':
-					msXGenHub.importPalette(palName, version, not bake)
-				if impType == 'groom only':
-					msXGenHub.importGrooming(palName, version= version)
-				if impType == 'guides only':
-					msXGenHub.importGuides(palName, version= version)
-			else:
-				if impType == 'description':
-					msXGenHub.importDescription(palName, descName, version, not bake)
-				if impType == 'groom only':
-					msXGenHub.importGrooming(palName, descName, version)
-				if impType == 'guides only':
-					msXGenHub.importGuides(palName, descName, version)
-	
-	proc_btn.setCommand(partial(process, mode_mqsb))
+	def initMode(self):
+		"""doc"""
+		if self.MODE == 'MOD':
+			self.actionSwitch('CHECK  IN', 'CHECK  OUT',
+							[126, 121, 31], [60, 124, 69], self.DEFAULT[self.MODE])
+		self.initAction()
+		self.qsb_mode.toggleCmd = partial(self.initPanel)
 
-	# SHOW WINDOW
 
-	actModeShift(mode_mqsb)
+	def showUI(self):
+		"""doc"""
+		
+		if pm.window(self.uiName, q= 1, ex= 1):
+			pm.deleteUI(self.uiName)
 
-	pm.window(windowName, e= 1, w= windowWidth, h= windowHeight)
+		# make window
+		pm.window(self.uiName, t= __uititle__, s= 0, mxb= 0, mnb= 0)
+		# main column
+		self.col_main = pm.columnLayout(adj= 1)
 
-	pm.showWindow(windowName)
+		# top banner
+		pm.columnLayout(adj= 1, h= 40)
+		bannerTxt = pm.text(l= 'XGen Hub')
+		QBannerTxt = mqt.convert(bannerTxt)
+		QBannerTxt.setStyleSheet('QObject {font: bold 26px; color: #222222;}')
+		pm.setParent('..')
+		
+		# ----------
+		pm.text(l= '', h= 4);pm.separator();pm.text(l= '', h= 2)
+		
+		# XGenHub Repository Root
+		pm.columnLayout(adj= 1, cal= 'left')
+		pm.text(l= '  - XGenHub Repository Root', h= 22)
+		pm.rowLayout(nc= 2, adj= 1)
+		self.txf_repo = pm.textField(text= self.projPath, ed= False)
+		self.btn_link = pm.iconTextButton(i= 'syncOn.png', w= 20, h= 20, c= self.linkRepoDir)
+		pm.setParent('..')
+
+		# Action Mode
+		self.col_acts = pm.columnLayout(w= 257, h= 57)
+		pm.setParent('..')
+		
+		# ----------
+		pm.text(l= '', h= 6);pm.separator();pm.text(l= '', h= 4)
+
+		# operation panel
+		self.col_oper = pm.columnLayout(w= 257, h= 92)
+		pm.setParent('..')
+
+		# snapshot panel
+		pm.columnLayout(adj= 1, cal= 'center')
+		pm.text(l= '  [ Snapshots ]  ', h= 20)
+		pm.columnLayout(adj= 1, h= 142, cal= 'center')
+		self.img_snap = pm.image(i= snapshot_empty)
+		pm.setParent('..')
+		pm.text(l= '', h= 2)
+		pm.rowLayout(nc= 5)
+		for i in range(5):
+			pm.button(self.snapBtnn + str(i+1), l= str(i+1), w= 49)
+		pm.setParent('..')
+		pm.setParent('..')
+		pm.setParent('..')
+
+		# ----------
+		pm.text(l= '', h= 4);pm.separator();pm.text(l= '', h= 2)
+
+		# execute button
+		pm.columnLayout(adj= 1)
+		self.proc_btn = pm.button(l= 'P R O C E E D', h= 45, bgc= [0.25, 0.46, 0.49])
+		pm.setParent('..')
+
+		# main column END
+		pm.setParent('..')
+
+		self.initMode()
+
+		pm.window(self.uiName, e= 1, w= self.uiWidth, h= self.uiHeight)
+		pm.showWindow(self.uiName)
+
+
+MsXGenHubUI.MODmakePanel = panelMOD.makePanel
+MsXGenHubUI.MODinitPanel = panelMOD.initPanel
+
+
+if __name__ == '__main__':
+	pass

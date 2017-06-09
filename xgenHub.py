@@ -23,6 +23,9 @@ import mXGen.msxgmExternalAPI as msxgApi; reload(msxgApi)
 import mXGen.msxgmAnimWireTool as msxgAwt; reload(msxgAwt)
 
 
+__version__ = '1.1.0'
+
+
 def linkedCheck(func):
 	def deco(*args, **kargs):
 		if args[0].linked:
