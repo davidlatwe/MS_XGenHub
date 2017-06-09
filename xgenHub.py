@@ -196,6 +196,9 @@ class MsXGenHub():
 		if not os.path.isfile(xgenFile):
 			pm.error('[XGen Hub] : .xgen file is not exists. -> ' + xgenFile)
 			return None
+		if asDelta and not pm.sceneName():
+			pm.error('[XGen Hub] : Current scene is not saved (), please save first.')
+			return None
 		# check if palette exists in current scene
 		if palName in xg.palettes():
 			# delete current palette folder
@@ -265,6 +268,12 @@ class MsXGenHub():
 				pm.warning('[XGen Hub] : nDynamic attribute presets folder not found.')
 
 		if asDelta:
+			dataPath = xg.getAttr('xgDataPath', palName)
+			dataPath = dataPath + ';' + self.paletteVerDir(palName, version, raw= True)
+			xg.setAttr('xgDataPath', dataPath, palName)
+			# save scenes
+			pm.saveFile(f= 1)
+			# set export delta
 			pm.setAttr(palName + '.xgExportAsDelta', 1)
 
 		return palName
@@ -643,18 +652,18 @@ class MsXGenHub():
 		deltaFile = '/'.join([deltaPath, palName + '.xgd'])
 
 		# change to export version path and keep current
-		workPath = xg.getAttr('xgDataPath', palName)
-		workProj = xg.getAttr('xgProjectPath', palName)
-		xg.setAttr('xgDataPath', self.paletteVerDir(palName, version, raw= True), palName)
-		xg.setAttr('xgProjectPath', self.projPath, palName)
+		#workPath = xg.getAttr('xgDataPath', palName)
+		#workProj = xg.getAttr('xgProjectPath', palName)
+		#xg.setAttr('xgDataPath', self.paletteVerDir(palName, version, raw= True), palName)
+		#xg.setAttr('xgProjectPath', self.projPath, palName)
 
 		# export delta
 		print deltaFile
 		xg.createDelta(palName, deltaFile)
 
 		# restore
-		xg.setAttr('xgDataPath', workPath, palName)
-		xg.setAttr('xgProjectPath', workProj, palName)
+		#xg.setAttr('xgDataPath', workPath, palName)
+		#xg.setAttr('xgProjectPath', workProj, palName)
 
 		# get curves and export
 		for desc in xg.descriptions(palName):
