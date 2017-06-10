@@ -36,7 +36,7 @@ class MsXGenHubUI(xgenHub.MsXGenHub):
 		# main window
 		self.uiName = 'ms_xgenHub_mainUI'
 		self.uiWidth = 261
-		self.uiHeight = 521
+		self.uiHeight = 524
 		# UI MODE
 		self.MODE = 'SIM'
 		self.MODELIST = ['MOD', 'SIM', 'VRS']
@@ -176,11 +176,12 @@ class MsXGenHubUI(xgenHub.MsXGenHub):
 
 		# top banner
 		# main
-		pm.columnLayout(adj= 1)
+		pm.columnLayout(adj= 1, bgc= [.22,.22,.22])
 		pm.text(l= '', h= 3)
 		self.txt_ban1 = pm.text(l= 'XGen Hub')
 		QBannerTxt1 = mqt.convert(self.txt_ban1)
-		QBannerTxt1.setStyleSheet('QObject {font: bold 12px; color: #222222;}')
+		QBannerTxt1.setStyleSheet('QObject {font: bold 12px; color: #121212;}')
+		pm.text(l= '', h= 3)
 		pm.setParent('..')
 		# sub
 		pm.rowLayout(nc= 5, adj= 3)

@@ -13,8 +13,8 @@ import pymel.core as pm
 def makePanel(cls, switch):
 	"""
 	@switch:
-		True  -> check in
-		False -> check out
+		True  -> export
+		False -> import
 	"""
 	global col_ope1
 	global col_ope2
@@ -123,6 +123,15 @@ def makePanel(cls, switch):
 		else:
 			pm.textField(ani_textFd, e= 1, text= '')
 
+	def getShotName(*args):
+		"""doc"""
+		if pal_opMenu.getItemListLong():
+			palName = str(pal_opMenu.getValue())
+			shotName = cls.getAnimShotName(palName)
+			pm.textField(txt_shot, e= 1, text= shotName)
+		else:
+			pm.textField(txt_shot, e= 1, text= '')
+
 	def shotNameList(*args):
 		"""doc"""
 		if sht_opMenu.getItemListLong():
@@ -143,6 +152,7 @@ def makePanel(cls, switch):
 		if cls.linked and os.listdir(cls.vsRepo) and pal_opMenu.getItemListLong():
 			palName = pal_opMenu.getValue()
 			version = ''
+			shotName = ''
 			if pm.optionMenu(brn_opMenu, q= 1, ill= 1):
 				version = cls.dirAnim + pm.optionMenu(brn_opMenu, q= 1, v= 1)
 			if pm.optionMenu(sht_opMenu, q= 1, ill= 1):
@@ -163,13 +173,8 @@ def makePanel(cls, switch):
 			if not pal_opMenu.getNumberOfItems():
 				pm.warning('[XGen Hub] : There are no collections in current scene.')
 				return None
-			if not pm.textField(txt_shot, q= 1, text= 1):
-				pm.warning('[XGen Hub] : No shotName given.')
-				return None
 			palName = str(pal_opMenu.getValue())
-			shotName = str(pm.textField(txt_shot, q= 1, text= 1))
-
-			cls.exportAnimPackage(palName, shotName)
+			cls.exportVRaySceneFile(palName)
 		else:
 			# import
 			if not pal_opMenu.getNumberOfItems():
@@ -177,6 +182,9 @@ def makePanel(cls, switch):
 				return None
 			if not brn_opMenu.getNumberOfItems():
 				pm.warning('[XGen Hub] : This collection has no animBranch in repo yet.')
+				return None
+			if not sht_opMenu.getNumberOfItems():
+				pm.warning('[XGen Hub] : This collection has no exported shot in repo yet.')
 				return None
 			# simple check if geo selected
 			geoSelected = False
@@ -195,7 +203,8 @@ def makePanel(cls, switch):
 
 			palName = str(pal_opMenu.getValue())
 			version = cls.dirAnim + str(brn_opMenu.getValue())
-			cls.importPalette(palName, version, False, True, True)
+			shotName = str(sht_opMenu.getValue())
+			cls.importAnimResult(palName, version, shotName)
 
 
 	# MODIFY
@@ -204,10 +213,13 @@ def makePanel(cls, switch):
 			pm.button(cls.snapBtnn + str(i+1), e= 1, en= 1, c= partial(cls.snapshot_take, i),
 				bgc= cls.snapRest)
 
-		pm.optionMenu(pal_opMenu, e= 1, cc= animBranchName)
+		def animBranchAndShotName(*args):
+			"""doc"""
+			animBranchName();getShotName()
+		pm.optionMenu(pal_opMenu, e= 1, cc= animBranchAndShotName)
 
 		#load
-		animBranchName()
+		animBranchAndShotName()
 	else:
 		for i in range(5):
 			pm.button(cls.snapBtnn + str(i+1), e= 1, c= partial(snapshot_show, i))
@@ -221,6 +233,8 @@ def makePanel(cls, switch):
 			"""doc"""
 			shotNameList();snapshot_show(0)
 		pm.optionMenu(brn_opMenu, e= 1, cc= shotListAndSnapshot)
+
+		pm.optionMenu(sht_opMenu, e= 1, cc= partial(snapshot_show, 0))
 
 		# load
 		animBranchAndShotListAndSnapshot()

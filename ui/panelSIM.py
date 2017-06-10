@@ -13,8 +13,8 @@ import pymel.core as pm
 def makePanel(cls, switch):
 	"""
 	@switch:
-		True  -> check in
-		False -> check out
+		True  -> export
+		False -> import
 	"""
 	global col_ope1
 	global col_ope2
