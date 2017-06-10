@@ -517,7 +517,7 @@ class MsXGenHub():
 		for abc in os.listdir(deltaPath):
 			abcPath = '/'.join([deltaPath, abc])
 			if os.path.isfile(abcPath):
-				descName = abc.spilt('.')[0]
+				descName = abc.split('.')[0]
 				wiresAbc[descName] = str(abcPath)
 		# animWire turn off live mode to read .abc
 		for desc in [desc for desc in wiresAbc if desc in xg.descriptions(palName)]:
