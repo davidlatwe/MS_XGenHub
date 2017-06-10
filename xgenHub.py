@@ -17,6 +17,7 @@ import pymel.core as pm
 import xgenm as xg
 import xgenm.xgGlobal as xgg
 import xgenm.XgExternalAPI as base
+import xgenm.xgCmds as xgcmds
 
 import mXGen; reload(mXGen)
 import mXGen.msxgmExternalAPI as msxgApi; reload(msxgApi)
@@ -68,10 +69,10 @@ class MsXGenHub():
 			pm.warning('[XGen Hub] : versionRepo not linked yet.')
 
 		# check Vray plugin loaded
-		if not pm.pluginInfo('vrayformaya', q= 1, l= 1):
-			pm.loadPlugin('vrayformaya')
-		if not pm.pluginInfo('xgenVRay', q= 1, l= 1):
-			pm.loadPlugin('xgenVRay')
+		#if not pm.pluginInfo('vrayformaya', q= 1, l= 1):
+		#	pm.loadPlugin('vrayformaya')
+		#if not pm.pluginInfo('xgenVRay', q= 1, l= 1):
+		#	pm.loadPlugin('xgenVRay')
 		# check xgen plug-in is loaded
 		if not pm.pluginInfo('xgenToolkit', q= 1, l= 1):
 			pm.loadPlugin('xgenToolkit')
