@@ -30,6 +30,9 @@ class SwitchBox(QtGui.QCheckBox):
 		self.onLabel = kwargs['onl'] if 'onl' in kwargs else ''
 		self.offLabel = kwargs['ofl'] if 'ofl' in kwargs else ''
 		self.default = kwargs['v'] if 'v' in kwargs else False
+		''' ARGS: BUTTON '''
+		# turn to button like (no switch handle)
+		self.likeBtn = kwargs['btn'] if 'btn' in kwargs else False
 		''' ARGS: CMD '''
 		# maya command to exec when state changed
 		self.onCmd = kwargs['onc'] if 'onc' in kwargs else ''
@@ -130,13 +133,18 @@ class SwitchBox(QtGui.QCheckBox):
 			painter.setBrush(brush)
 			painter.drawRoundedRect(0, 0, self.width(), self.height(), roun, roun)
 			# switch
-			brush = QtGui.QBrush(btnBG, style= QtCore.Qt.SolidPattern)
-			painter.setBrush(brush)
-			painter.drawRoundedRect(btnW, btnG, btnW-btnG, btnH-(btnG*2), roun, roun)
+			if not self.likeBtn:
+				brush = QtGui.QBrush(btnBG, style= QtCore.Qt.SolidPattern)
+				painter.setBrush(brush)
+				painter.drawRoundedRect(btnW, btnG, btnW-btnG, btnH-(btnG*2), roun, roun)
 			# label
 			painter.setPen(pen)
-			painter.drawText(btnG, btnG, btnW-btnG, btnH-(btnG*2), \
-				QtCore.Qt.AlignCenter, self.onLabel)
+			if not self.likeBtn:
+				painter.drawText(btnG, btnG, btnW-btnG, btnH-(btnG*2), \
+					QtCore.Qt.AlignCenter, self.onLabel)
+			else:
+				painter.drawText(btnG, btnG, self.w-btnG, btnH-(btnG*2), \
+					QtCore.Qt.AlignCenter, self.onLabel)
 
 		else:
 			''' OFF '''
@@ -145,12 +153,17 @@ class SwitchBox(QtGui.QCheckBox):
 			painter.setBrush(brush)
 			painter.drawRoundedRect(0, 0, self.width(), self.height(), roun, roun)
 			# switch
-			brush = QtGui.QBrush(btnBG, style= QtCore.Qt.SolidPattern)
-			painter.setBrush(brush)
-			painter.drawRoundedRect(btnG, btnG, btnW-btnG, btnH-(btnG*2), roun, roun)
+			if not self.likeBtn:
+				brush = QtGui.QBrush(btnBG, style= QtCore.Qt.SolidPattern)
+				painter.setBrush(brush)
+				painter.drawRoundedRect(btnG, btnG, btnW-btnG, btnH-(btnG*2), roun, roun)
 			# label
 			painter.setPen(pen)
-			painter.drawText(btnW, btnG, btnW-btnG, btnH-(btnG*2), \
-				QtCore.Qt.AlignCenter, self.offLabel)
+			if not self.likeBtn:
+				painter.drawText(btnW, btnG, btnW-btnG, btnH-(btnG*2), \
+					QtCore.Qt.AlignCenter, self.offLabel)
+			else:
+				painter.drawText(btnG, btnG, self.w-btnG, btnH-(btnG*2), \
+					QtCore.Qt.AlignCenter, self.offLabel)
 
 		painter.end()

@@ -22,6 +22,7 @@ import ui;reload(ui)
 import ui.panelMOD as panelMOD; reload(panelMOD)
 import ui.panelSIM as panelSIM; reload(panelSIM)
 import ui.panelVRS as panelVRS; reload(panelVRS)
+import ui.panelREN as panelREN; reload(panelREN)
 
 
 __version__ = xgenHub.__version__
@@ -38,9 +39,9 @@ class MsXGenHubUI(xgenHub.MsXGenHub):
 		self.uiWidth = 261
 		self.uiHeight = 524
 		# UI MODE
-		self.MODE = 'SIM'
-		self.MODELIST = ['MOD', 'SIM', 'VRS']
-		self.MODEDICT = {'MOD': True, 'SIM': True, 'VRS': True}
+		self.MODE = 'REN'
+		self.MODELIST = ['MOD', 'SIM', 'VRS', 'REN']
+		self.MODEDICT = {'MOD': True, 'SIM': True, 'VRS': True, 'REN': False}
 		# snapshot things
 		self.snapSize = [252, 140]
 		self.snapNull = os.path.dirname(__file__) + '/None.png'
@@ -76,7 +77,7 @@ class MsXGenHubUI(xgenHub.MsXGenHub):
 			self.initPanel()
 
 
-	def actionSwitch(self, onLabel, offLabel, onColor, offColor, default):
+	def actionSwitch(self, onLabel, offLabel, onColor, offColor, default, btnLike= False):
 		"""doc"""
 		if pm.columnLayout(self.col_acth, q= 1, ex= 1):
 			pm.deleteUI(self.col_acth)
@@ -84,7 +85,7 @@ class MsXGenHubUI(xgenHub.MsXGenHub):
 		self.col_acth = pm.columnLayout(p= self.col_acts)
 		pm.text(l= ' - Action Mode', h= 20)
 		cmA= pm.columnLayout()
-		self.qsb_mode = mqsb.SwitchBox(onl= onLabel, ofl= offLabel,
+		self.qsb_mode = mqsb.SwitchBox(onl= onLabel, ofl= offLabel, btn= btnLike,
 			w= self.uiWidth - 6, h= 35, onbg= onColor, ofbg= offColor, v= default, p= cmA)
 		pm.setParent('..')
 
@@ -132,6 +133,9 @@ class MsXGenHubUI(xgenHub.MsXGenHub):
 		if self.MODE == 'VRS':
 			self.makePanel = self.VRSmakePanel
 			self.initPanel = self.VRSinitPanel
+		if self.MODE == 'REN':
+			self.makePanel = self.RENmakePanel
+			self.initPanel = self.RENinitPanel
 			
 		self.makePanel(self.qsb_mode.isChecked())
 
@@ -148,6 +152,10 @@ class MsXGenHubUI(xgenHub.MsXGenHub):
 		if self.MODE == 'VRS':
 			self.actionSwitch('EXPORT', 'IMPORT',
 							[35, 90, 121], [50, 70, 124], self.MODEDICT[self.MODE])
+		if self.MODE == 'REN':
+			self.actionSwitch('', 'GRAB  VRAY  SCRIPT',
+							[190, 70, 80], [190, 70, 80], self.MODEDICT[self.MODE], True)
+			self.qsb_mode.setEnabled(False)
 		self.initAction()
 		self.qsb_mode.toggleCmd = partial(self.initPanel)
 
@@ -259,6 +267,9 @@ MsXGenHubUI.SIMinitPanel = panelSIM.initPanel
 
 MsXGenHubUI.VRSmakePanel = panelVRS.makePanel
 MsXGenHubUI.VRSinitPanel = panelVRS.initPanel
+
+MsXGenHubUI.RENmakePanel = panelREN.makePanel
+MsXGenHubUI.RENinitPanel = panelREN.initPanel
 
 if __name__ == '__main__':
 	pass

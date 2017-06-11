@@ -24,7 +24,7 @@ import mXGen.msxgmExternalAPI as msxgApi; reload(msxgApi)
 import mXGen.msxgmAnimWireTool as msxgAwt; reload(msxgAwt)
 
 import mMaya as mMaya; reload(mMaya)
-import mMaya.mVRay as mVRay; reload(mVRay)
+import mMaya.mRender as mRender; reload(mRender)
 
 
 __version__ = '1.1.0'
@@ -164,6 +164,15 @@ class MsXGenHub():
 		return start, end
 
 
+	def notifyMsg(self, msg, level):
+		"""doc"""
+		titleLevel = ['Notify', 'Warning', 'Error']
+		iconLevel = ['information', 'warning', 'critical']
+		msg = '[XGen Hub]	\n' + msg
+		pm.confirmDialog(title= titleLevel[level], message= msg, ma= 'left',
+			button= 'OK', icon= iconLevel[level])
+
+
 	def refresh(self, level= ''):
 		"""
 		level: 'Full', 'Palette', 'Description'
@@ -253,9 +262,9 @@ class MsXGenHub():
 		if asDelta and not pm.sceneName():
 			pm.error('[XGen Hub] : Current scene is not saved (), please save first.')
 			return None
-
+		
 		self.clearPreview()
-
+		
 		# check if palette exists in current scene
 		if palName in xg.palettes():
 			# delete current palette folder
@@ -263,7 +272,10 @@ class MsXGenHub():
 			if os.path.isdir(palDir):
 				dir_util.remove_tree(palDir)
 			# delete current palette
+			# this action might cry about 'None type object has no attr "previewer"'
+			# when there is no xgen ui panel
 			xg.deletePalette(palName)
+		
 		# IMPORT PALETTE
 		palName = base.importPalette(xgenFile, delta, '')
 		# update the palette with the current project
@@ -333,6 +345,8 @@ class MsXGenHub():
 			# set export delta
 			pm.setAttr(palName + '.xgExportAsDelta', 1)
 
+		self.notifyMsg('Collection Import Complete !', 0)
+
 		return palName
 
 	@linkedCheck
@@ -378,6 +392,8 @@ class MsXGenHub():
 			self.importGrooming(palName, descName, version)
 		# import guides as well
 		self.importGuides(palName, descName, version)
+
+		self.notifyMsg('Description Import Complete !', 0)
 
 		return desc
 
@@ -464,6 +480,8 @@ class MsXGenHub():
 					if key == 'density':
 						pm.setAttr(igdesc + '.' + key, groomSettings[key])
 
+		self.notifyMsg('Grooming Import Complete !', 0)
+
 		return True
 
 	@linkedCheck
@@ -518,6 +536,8 @@ class MsXGenHub():
 				# curvesToGuides
 				pm.mel.xgmCurveToGuide(d= desc, tsp= 1.0, tsa= 0.0, deleteCurve= True)
 
+		self.notifyMsg('Guides Import Complete !', 0)
+
 		return True
 
 	@linkedCheck
@@ -554,7 +574,26 @@ class MsXGenHub():
 
 		self.refresh('Full')
 
+		self.notifyMsg('Anim Result Import Complete !', 0)
+
 		return True
+
+	@linkedCheck
+	def generateVRayPostPythonScript(self, palName, shotName):
+		"""doc"""
+		renderGlob = pm.PyNode('defaultRenderGlobals')
+		if not renderGlob.currentRenderer.get() == 'vray':
+			self.notifyMsg('Current Renderer is Not V-Ray !', 2)
+			return None
+
+		# get postScript
+		vraySet = mRender.getVRaySettingsNode()
+		postScript = vraySet.postTranslatePython.get()
+		# check if there are already have we generated script
+		
+		# put
+		postScript += '\n'*3 + '# Following Script is auto generated from [XGen Hub] #\n'
+		vraySet.postTranslatePython.set(postScript)
 
 	@linkedCheck
 	def exportFullPackage(self, palName, version, bake= False, anim= False):
@@ -731,6 +770,8 @@ class MsXGenHub():
 
 		self.refresh('Full')
 
+		self.notifyMsg('Collection Export Complete !', 0)
+
 		return True
 
 	@linkedCheck
@@ -784,6 +825,8 @@ class MsXGenHub():
 
 		self.refresh('Full')
 
+		self.notifyMsg('Anim Result Export Complete !', 0)
+
 		return True
 
 	@linkedCheck
@@ -812,7 +855,7 @@ class MsXGenHub():
 		renderGlob.byFrameStep.set(1)
 		# setup vray render settings
 		vrsceneFile = self.getVRaySceneFilePath(palName, shotName)
-		vraySet = mVRay.getVRaySettingsNode()
+		vraySet = mRender.getVRaySettingsNode()
 		vrayAttrs = {
 			'vrscene_render_on': 0,
 			'vrscene_on': 1,
@@ -848,6 +891,10 @@ class MsXGenHub():
 			content += include % (vrsceneFile.split('.')[0], vt)
 		with open(vrsceneFile, 'w') as vrscene:
 			vrscene.write(content)
+
+		self.notifyMsg('File .vrscene Export Complete !', 0)
+
+		return True
 
 
 	def linkHairSystem(self, palName):
