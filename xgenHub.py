@@ -23,6 +23,9 @@ import mXGen; reload(mXGen)
 import mXGen.msxgmExternalAPI as msxgApi; reload(msxgApi)
 import mXGen.msxgmAnimWireTool as msxgAwt; reload(msxgAwt)
 
+import mMaya as mMaya; reload(mMaya)
+import mMaya.mVRay as mVRay; reload(mVRay)
+
 
 __version__ = '1.1.0'
 
@@ -69,10 +72,10 @@ class MsXGenHub():
 			pm.warning('[XGen Hub] : versionRepo not linked yet.')
 
 		# check Vray plugin loaded
-		#if not pm.pluginInfo('vrayformaya', q= 1, l= 1):
-		#	pm.loadPlugin('vrayformaya')
-		#if not pm.pluginInfo('xgenVRay', q= 1, l= 1):
-		#	pm.loadPlugin('xgenVRay')
+		if not pm.pluginInfo('vrayformaya', q= 1, l= 1):
+			pm.loadPlugin('vrayformaya')
+		if not pm.pluginInfo('xgenVRay', q= 1, l= 1):
+			pm.loadPlugin('xgenVRay')
 		# check xgen plug-in is loaded
 		if not pm.pluginInfo('xgenToolkit', q= 1, l= 1):
 			pm.loadPlugin('xgenToolkit')
@@ -124,6 +127,16 @@ class MsXGenHub():
 		return '/'.join([self.xgWork, palName])
 
 
+	def getVRaySceneFileRepo(self):
+		"""doc"""
+		return '/'.join([self.projPath, 'renderData', 'xgen_vrscene'])
+
+
+	def getVRaySceneFilePath(self, palName, shotName):
+		"""doc"""
+		return '/'.join([self.getVRaySceneFileRepo(), palName, shotName, palName + '.vrscene'])
+
+
 	def getHairSysName(self, descName):
 		"""doc"""
 		return descName + '_hairSystem'
@@ -142,6 +155,13 @@ class MsXGenHub():
 	def getAnimShotName(self, palName):
 		"""doc"""
 		return str(xg.getAttr(self.xgShotAttr, palName))
+
+
+	def getTimeSliderMinMax(self):
+		"""doc"""
+		start = int(pm.playbackOptions(q= 1, min= 1))
+		end = int(pm.playbackOptions(q= 1, max= 1)) + 1
+		return start, end
 
 
 	def refresh(self, level= ''):
@@ -527,6 +547,8 @@ class MsXGenHub():
 					xg.setAttr('liveMode', 'false', palName, desc, fxm)
 					xg.setAttr('wiresFile', wiresAbc[desc], palName, desc, fxm)
 
+		# assign shaders
+
 		# render settings
 		self.xgOutputSettings(palName)
 
@@ -745,8 +767,7 @@ class MsXGenHub():
 				# cache curves, export as alembic
 				if not pm.pluginInfo('AbcExport', q= 1, l= 1):
 					pm.loadPlugin('AbcExport')
-				start = int(pm.playbackOptions(q= 1, min= 1))
-				end = int(pm.playbackOptions(q= 1, max= 1)) + 1
+				start, end = self.getTimeSliderMinMax()
 				abcCmds = '-frameRange %d %d -uvWrite -worldSpace -dataFormat ogawa ' % (start, end)
 				abcRoot = '-root ' + ' -root '.join([cur.longName() for cur in pm.ls(curves)])
 				abcPath = '/'.join([deltaPath, desc + '.abc'])
@@ -777,16 +798,69 @@ class MsXGenHub():
 			pm.error('[XGen Hub] : Couldn\'t get ANIM shotName. Export process stop.')
 			return None
 
-		# hide everything
+		# hide everything (root nodes in outliner)
 		pm.hide(all= 1)
-
 		# show xgen palette
 		pm.setAttr(palName + '.v', True)
+		# get start, end frame from time slider
+		start, end = self.getTimeSliderMinMax()
+		# set renderer to VRay and time range
+		renderGlob = pm.PyNode('defaultRenderGlobals')
+		renderGlob.currentRenderer.set('vray')
+		renderGlob.startFrame.set(start)
+		renderGlob.endFrame.set(end)
+		renderGlob.byFrameStep.set(1)
+		# setup vray render settings
+		vrsceneFile = self.getVRaySceneFilePath(palName, shotName)
+		vraySet = mVRay.getVRaySettingsNode()
+		vrayAttrs = {
+			'vrscene_render_on': 0,
+			'vrscene_on': 1,
+			'misc_separateFiles': 1,
+			'misc_exportLights': 0,
+			'misc_exportNodes': 1,
+			'misc_exportGeometry': 1,
+			'misc_exportMaterials': 1,
+			'misc_exportTextures': 1,
+			'misc_exportBitmaps': 0,
+			'misc_eachFrameInFile': 0,
+			'misc_meshAsHex': 1,
+			'misc_transformAsHex': 1,
+			'misc_compressedVrscene': 1,
+			'vrscene_filename': vrsceneFile,
+			'animType': 1,
+			'animBatchOnly': 0,
+			'runToAnimationStart': 0,
+			'runToCurrentTime': 0
+		}
+		for attr in vrayAttrs:
+			vraySet.setAttr(attr, vrayAttrs[attr])
+		# hit render
+		pm.mel.RenderIntoNewWindow()
+		# modify .vrscene file
+		content = ''
+		vrscene = open(vrsceneFile, 'r')
+		for _ in " "*7: content += vrscene.readline()
+		vrscene.close()
+		include = '#include "%s_%s.vrscene"\n'
+		vrsType = ['nodes', 'geometry', 'materials', 'textures']
+		for vt in vrsType:
+			content += include % (vrsceneFile.split('.')[0], vt)
+		with open(vrsceneFile, 'w') as vrscene:
+			vrscene.write(content)
 
 
 	def linkHairSystem(self, palName):
 		"""doc"""
 		self.clearPreview()
+
+		nHairAttrs = {
+			'noStretch': 1,
+			'stretchResistance': 100,
+			'compressionResistance': 100,
+			'startCurveAttract': 0.3,
+			'mass': 0.05
+			}
 
 		# get active AnimWire module list
 		animWireDict = {}
@@ -806,10 +880,13 @@ class MsXGenHub():
 			pm.warning('[XGen Hub] : Building hairSystem for description: %s, FXModule: %s' % (desc, fxm))
 			descHairSysName = self.getHairSysName(desc)
 			msxgAwt.exportCurvesMel(palName, desc, fxm)
-			meshPatch = msxgAwt.xgmMakeCurvesDynamic(descHairSysName, False)
+			meshPatch, hsys = msxgAwt.xgmMakeCurvesDynamic(descHairSysName, False)
 			msxgAwt.nRigidRename(meshPatch, self.getRigidNameVar())
 			msxgAwt.attachSlot(palName, desc, fxm, descHairSysName)
 			pm.warning('[XGen Hub] : Link hairSystem done.')
+			# set some attributes
+			for attr in nHairAttrs:
+				hsys.setAttr(attr, nHairAttrs[attr])
 
 
 	def ioAttrPreset(self, nodeType, save):

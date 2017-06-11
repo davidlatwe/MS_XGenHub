@@ -102,7 +102,7 @@ def xgmMakeCurvesDynamic(descHairSysName, collide):
 	# MakeCurvesDynamic callback
 	pm.mel.eval('makeCurvesDynamic 2 { "1", "1", "1", "1", "0"}')
 
-	return meshPatch
+	return meshPatch, hsys
 
 
 def attachSlot(palName, descName, fxmName, descHairSysName):
