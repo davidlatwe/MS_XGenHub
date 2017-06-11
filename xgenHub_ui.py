@@ -39,7 +39,7 @@ class MsXGenHubUI(xgenHub.MsXGenHub):
 		self.uiWidth = 261
 		self.uiHeight = 524
 		# UI MODE
-		self.MODE = 'REN'
+		self.MODE = 'SIM'
 		self.MODELIST = ['MOD', 'SIM', 'VRS', 'REN']
 		self.MODEDICT = {'MOD': True, 'SIM': True, 'VRS': True, 'REN': False}
 		# snapshot things
