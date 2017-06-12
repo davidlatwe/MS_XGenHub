@@ -305,7 +305,10 @@ class MsXGenHub():
 			# delete current palette folder
 			palDir = xg.expandFilepath(xg.getAttr('xgDataPath', palName), '')
 			if os.path.isdir(palDir):
-				dir_util.remove_tree(palDir)
+				try:
+					dir_util.remove_tree(palDir)
+				except:
+					pm.warning('[XGen Hub] : Dir may not remove. -> ' + palDir)
 			# delete current palette
 			# this action might cry about 'None type object has no attr "previewer"'
 			# when there is no xgen ui panel
@@ -403,7 +406,10 @@ class MsXGenHub():
 			# delete current description folder
 			descDir = xg.expandFilepath('${DESC}', descName)
 			if os.path.isdir(descDir):
-				dir_util.remove_tree(descDir)
+				try:
+					dir_util.remove_tree(descDir)
+				except:
+					pm.warning('[XGen Hub] : Dir may not remove. -> ' + descDir)
 			# delete current description
 			xg.deleteDescription(palName, descName)
 		# IMPORT DESCRIPTION
@@ -462,7 +468,10 @@ class MsXGenHub():
 					src = groomDesc[desc]
 					dst = '/'.join([self.paletteWipDir(palName), desc, 'groom'])
 					if os.path.isdir(dst):
-						dir_util.remove_tree(dst)
+						try:
+							dir_util.remove_tree(dst)
+						except:
+							pm.warning('[XGen Hub] : Dir may not remove. -> ' + dst)
 					dir_util.copy_tree(src, dst)
 			else:
 				pm.error('[XGen Hub] : Some data missing, Check ScriptEditor. grooming import stopped.')
