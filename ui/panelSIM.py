@@ -85,12 +85,17 @@ def makePanel(cls, switch):
 
 	# *********************************************
 	# ROW TWO B - chd num 1
-	animRow = pm.rowLayout(nc= 1, vis= not switch)
+	animRow = pm.rowLayout(nc= 2, vis= not switch)
 	if animRow:
 		# CHD 0
 		pm.columnLayout(cal= 'left')
 		pm.text(l= '  * Shot History', h= 20)
 		sht_opMenu = pm.optionMenu(w= 140)
+		pm.setParent('..')
+		# CHD 1
+		pm.columnLayout(cal= 'left')
+		pm.text(l= '  * Ref Wires Frame', h= 20)
+		inf_refwir = pm.intField(v= 1, w= 100)
 		pm.setParent('..')
 	pm.setParent('..')
 
@@ -154,6 +159,14 @@ def makePanel(cls, switch):
 			if not i == index:
 				pm.button(cls.snapBtnn + str(i+1), e= 1, bgc= cls.snapRest)
 
+	def refWiresFrameEnterCmd(*args):
+		"""doc"""
+		palName = str(pal_opMenu.getValue())
+		refWiresFrame = str(pm.intField(inf_refwir, q= 1, v= 1))
+		if palName:
+			cls.setRefWiresFrame(palName, refWiresFrame)
+
+
 	def process(mqsb, *args):
 		"""doc"""
 		if mqsb.isChecked():
@@ -195,6 +208,8 @@ def makePanel(cls, switch):
 			version = cls.dirAnim + str(brn_opMenu.getValue())
 			cls.importPalette(palName, version, False, True, True)
 
+			refWiresFrameEnterCmd()
+
 
 	# MODIFY
 	if switch:
@@ -219,6 +234,8 @@ def makePanel(cls, switch):
 			"""doc"""
 			shotNameList();snapshot_show(0)
 		pm.optionMenu(brn_opMenu, e= 1, cc= shotListAndSnapshot)
+
+		pm.intField(inf_refwir, e= 1, ec= refWiresFrameEnterCmd)
 
 		# load
 		animBranchAndShotListAndSnapshot()

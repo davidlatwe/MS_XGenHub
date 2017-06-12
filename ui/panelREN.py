@@ -112,14 +112,16 @@ def makePanel(cls, switch):
 		if sht_opMenu.getItemListLong():
 			sht_opMenu.clear()
 		if cls.linked and os.listdir(cls.vsRepo) and brn_opMenu.getItemListLong():
-			palName = str(pal_opMenu.getValue())
-			version = cls.dirAnim + str(brn_opMenu.getValue())
-			shotDir = cls.paletteDeltaDir(palName, version, '')
-			if os.path.exists(shotDir):
-				shotList = os.listdir(shotDir)
-				if shotList:
-					for shot in shotList:
-						pm.menuItem(shot, p= sht_opMenu)
+			if os.path.exists(cls.getVRaySceneFileRepo()):
+				palName = str(pal_opMenu.getValue())
+				version = cls.dirAnim + str(brn_opMenu.getValue())
+				shotDir = cls.paletteDeltaDir(palName, version, '')
+				if os.path.exists(shotDir):
+					shotList = os.listdir(shotDir)
+					if shotList:
+						for shot in shotList:
+							if os.path.isfile(cls.getVRaySceneFilePath(palName, shot)):
+								pm.menuItem(shot, p= sht_opMenu)
 
 	def snapshot_show(index, *args):
 		"""doc"""
@@ -155,20 +157,6 @@ def makePanel(cls, switch):
 				return None
 			if not sht_opMenu.getNumberOfItems():
 				pm.warning('[XGen Hub] : This collection has no exported shot in repo yet.')
-				return None
-			# simple check if geo selected
-			geoSelected = False
-			if pm.ls(sl= 1):
-				for dag in pm.ls(sl= 1):
-					if dag.type() == 'transform':
-						for shp in dag.getShapes():
-							if shp.type() == 'mesh':
-								geoSelected = True
-								break
-					if geoSelected:
-						break
-			if not geoSelected:
-				pm.warning('[XGen Hub] : Please select a geometry.')
 				return None
 
 			palName = str(pal_opMenu.getValue())

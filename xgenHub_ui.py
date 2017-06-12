@@ -5,6 +5,7 @@ Created on 2017.05.24
 @author: davidpower
 '''
 import os
+import json
 from functools import partial
 
 import pymel.core as pm
@@ -34,14 +35,16 @@ class MsXGenHubUI(xgenHub.MsXGenHub):
 	def __init__(self):
 		"""doc"""
 		xgenHub.MsXGenHub.__init__(self)
+		# user settings
+		self.settings = '/'.join([os.environ.get('MAYA_APP_DIR'), 'xgenHub_lastStatus.json'])
 		# main window
 		self.uiName = 'ms_xgenHub_mainUI'
 		self.uiWidth = 261
 		self.uiHeight = 524
 		# UI MODE
-		self.MODE = 'SIM'
+		self.MODE = self.loadLastStatus()
 		self.MODELIST = ['MOD', 'SIM', 'VRS', 'REN']
-		self.MODEDICT = {'MOD': True, 'SIM': True, 'VRS': True, 'REN': False}
+		self.MODEDICT = {'MOD': False, 'SIM': False, 'VRS': False, 'REN': False}
 		# snapshot things
 		self.snapSize = [252, 140]
 		self.snapNull = os.path.dirname(__file__) + '/None.png'
@@ -64,6 +67,21 @@ class MsXGenHubUI(xgenHub.MsXGenHub):
 		self.btn_link = 'repo link button'
 		self.img_snap = 'snapshot image'
 		self.proc_btn = 'final execute button'
+
+
+	def loadLastStatus(self, *args):
+		"""doc"""
+		if os.path.isfile(self.settings):
+			with open(self.settings) as jsonSet:
+				return json.load(jsonSet)['MODE']
+		else:
+			return 'SIM'
+
+
+	def saveLastStatus(self, *args):
+		"""doc"""
+		with open(self.settings, 'w') as jsonSet:
+			json.dump({'MODE': self.MODE}, jsonSet, indent=4)
 
 
 	def linkRepoDir(self):
@@ -178,7 +196,7 @@ class MsXGenHubUI(xgenHub.MsXGenHub):
 			pm.deleteUI(self.uiName)
 
 		# make window
-		pm.window(self.uiName, t= __uititle__, s= 0, mxb= 0, mnb= 0)
+		pm.window(self.uiName, t= __uititle__, s= 0, mxb= 0, mnb= 0, cc= self.saveLastStatus)
 		# main column
 		self.col_main = pm.columnLayout(adj= 1)
 

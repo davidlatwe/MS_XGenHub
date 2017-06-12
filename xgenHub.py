@@ -119,7 +119,7 @@ class MsXGenHub():
 
 	def hatchScripts(self):
 		"""doc"""
-		scriptDir = pm.workspace.path + '/' + pm.workspace.fileRules['scripts']
+		scriptDir = self.getRenderScriptDir()
 
 		mVrsInitScript = '' \
 		+ '# \n' \
@@ -131,7 +131,7 @@ class MsXGenHub():
 		+ 'import pymel.core as pm\n' \
 		+ 'def getDaddy():\n' \
 		+ '	vrsceneList = []; paletteList = []\n' \
-		+ '	for dag in pm.ls("prefix*", typ= "transform"):\n' \
+		+ '	for dag in pm.ls("' + self.proxyPrefix + '*", typ= "transform"):\n' \
 		+ '		if dag.hasAttr("vrscenePath"): vrsceneList.append(dag.getAttr("vrscenePath"))\n' \
 		+ '		if dag.hasAttr("paletteName"): paletteList.append(dag.getAttr("paletteName"))\n' \
 		+ '	return [vrsceneList, paletteList, "' + self.proxyPrefix + '", "' + self.princPrefix + '"]\n'
@@ -170,6 +170,11 @@ class MsXGenHub():
 	def getVRaySceneFilePath(self, palName, shotName):
 		"""doc"""
 		return '/'.join([self.getVRaySceneFileRepo(), palName, shotName, palName + '.vrscene'])
+
+
+	def getRenderScriptDir(self):
+		"""doc"""
+		return pm.workspace.path + '/' + pm.workspace.fileRules['scripts']
 
 
 	def getHairSysName(self, descName):
@@ -292,10 +297,11 @@ class MsXGenHub():
 		xgenFileName = palName + '.xgen'
 		xgenFile = str('/'.join([self.paletteVerDir(palName, version), xgenFileName]))
 		if not os.path.isfile(xgenFile):
+			self.notifyMsg('.xgen file is not exists.', 2)
 			pm.error('[XGen Hub] : .xgen file is not exists. -> ' + xgenFile)
 			return None
 		if asDelta and not pm.sceneName():
-			pm.error('[XGen Hub] : Current scene is not saved (), please save first.')
+			self.notifyMsg('Please save the scene.', 2)
 			return None
 		
 		self.clearPreview()
@@ -632,7 +638,7 @@ class MsXGenHub():
 
 		# hatch prxoy cube
 		proxyNodeName = self.proxyPrefix + palName
-		if pm.PyNode(proxyNodeName):
+		if pm.ls(proxyNodeName, typ= 'transform'):
 			pm.delete(pm.PyNode(proxyNodeName))
 		customAttrs = {
 			'vrscenePath': self.getVRaySceneFilePath(palName, shotName),
@@ -644,25 +650,34 @@ class MsXGenHub():
 			prxoy.setAttr(attr, str(customAttrs[attr]), l= True)
 
 		# hatch mel render callback
-		vrsCallback = 'python("import mVrsInit;yourDaddy=mVrsInit.getDaddy()")'
-		melCallback = renderGlob.preMel.get()
-		if not vrsCallback in melCallback: renderGlob.preMel.set(melCallback + ';' + vrsCallback)
+		vrsCallback = 'python("import mVrsInit;reload(mVrsInit);yourDaddy=mVrsInit.getDaddy()")'
+		melCallback = renderGlob.preMel.get() if renderGlob.preMel.get() else ''
+		if not vrsCallback in melCallback:
+			renderGlob.preMel.set(melCallback + (';' if melCallback else '') + vrsCallback)
 
 		# make script
 		scriptContent = [
 			'# [ XGen Hub ] Start #',
 			'# Please Do Not Edit #',
-			'import mVRayScene',
+			'import mVRayScene;reload(mVRayScene)',
 			'mVRayScene.kickProxyOutWith(yourDaddy)',
 			'# [ XGen Hub ]  End #'
 			]
 		# get postScript
 		vraySet = mRender.getVRaySettingsNode()
-		postScript = vraySet.postTranslatePython.get()
+		postScript = vraySet.postTranslatePython.get() if vraySet.postTranslatePython.get() else ''
 		# check if there are already have we generated script
-		if not scriptContent[0] in postScript: postScript = '\n'.join([postScript].extend(scriptContent))
+		if not scriptContent[0] in postScript:
+			postScript = [postScript]
+			postScript.extend(scriptContent)
+			postScript = '\n'.join(postScript)
 		# set postScript
 		vraySet.postTranslatePython.set(postScript)
+
+		# set module import path
+		scriptDir = self.getRenderScriptDir()
+		if not scriptDir in sys.path:
+			sys.path.append(scriptDir)
 
 		return True
 
@@ -1005,6 +1020,14 @@ class MsXGenHub():
 			# set some attributes
 			for attr in nHairAttrs:
 				hsys.setAttr(attr, nHairAttrs[attr])
+
+
+	def setRefWiresFrame(self, palName, refWiresFrame):
+		"""doc"""
+		for desc in xg.descriptions(palName):
+			for fxm in xg.fxModules(palName, desc):
+				if xg.fxModuleType(palName, desc, fxm) == 'AnimWiresFXModule':
+					xg.setAttr('refWiresFrame', refWiresFrame, palName, desc, fxm)
 
 
 	def ioAttrPreset(self, nodeType, save):
