@@ -19,7 +19,7 @@ def getVRaySettingsNode():
 		pm.loadPlugin('vrayformaya')
 
 	# Get Render-Node
-	vraySetNode = cmds.ls(type= 'VRaySettingsNode')
+	vraySetNode = pm.ls(type= 'VRaySettingsNode')
 
 	if not vraySetNode:
 		# Try and register vray
@@ -39,6 +39,6 @@ def getVRaySettingsNode():
 				str(globalsTabUpdateProcNames[tab_id])
 				])
 		# Create DAG for VRAYSETTINGS
-		cmds.shadingNode('VRaySettingsNode', asUtility= True, name= 'vraySettings')
+		pm.shadingNode('VRaySettingsNode', asUtility= True, name= 'vraySettings')
 
 	return pm.PyNode('vraySettings')

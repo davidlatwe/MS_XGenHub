@@ -5,6 +5,22 @@ Created on 2017.05.24
 @author: davidpower
 '''
 # This module only works under vray standlone
+
+"""
+To replace proxy objects in the scene file with the principal objects
+in all the vrscene files by the naming prefix.
+
+In order to replace those objects, and don't mixed them up after loaded to vray,
+we naming them with different prefix to identify.
+
+ex:
+In the scene file:			proxyBox_YellowBox
+							proxyBox_RedBox
+
+In the vrscene file:	principalBox_YellowBox
+						principalBox_RedBox
+
+"""
 from vray.utils import *
 
 
@@ -81,21 +97,27 @@ def litLinkingAdj(litLinkDict, proxyPrefix, principalPrefix, principalList):
 	litLinkSet.set('ignored_shadow_lights', litLinkDict['ignored_shadow_lights'])
 
 
-def principalBackToTown(vrsceneDir, proxyPrefix, principalPrefix, principalList):
+def kickProxyOutWith(yourDaddy):
 	"""
+	@yourDaddy  this is a args list, for shorter line purpose
+
+	@vrsceneList		vrscene file path list
+	@principalList		principal object name list
+	@proxyPrefix		proxy object name prefix in side the working scene
+	@principalPrefix	principal object in side vrscene file's name prefix
 	"""
+	vrsceneList, principalList, proxyPrefix, principalPrefix = yourDaddy
+
 	# save light linking
 	litLink_maya = saveLightLinker()
 	
-	# add vrscene
-	vrsceneDir = str(vrsceneDir + '/' if not vrsceneDir.endswith('/') else '')
-	for pn in principalList:
-		scenefile = vrsceneDir + pn + '.vrscene'
-		addSceneContent(scenefile, prefix= principalPrefix + pn)
+	# add all vrscene
+	for idx, vrsFile in enumerate(vrsceneList):
+		addSceneContent(vrsFile, prefix= principalPrefix + principalList[idx])
 
 	# modify object property(mtlwrapper)
-	for pn in principalList:
-		for vrayPlugin in findByName(proxyPrefix + pn + '*'):
+	for principalName in principalList:
+		for vrayPlugin in findByName(proxyPrefix + principalName + '*'):
 			if vrayPlugin.type() == 'Node':
 				# proxy ObjectID
 				objId = ''
@@ -111,7 +133,7 @@ def principalBackToTown(vrsceneDir, proxyPrefix, principalPrefix, principalList)
 				if mtl.type() == 'MtlWrapper':
 					wrapmtl = mtl
 				# modify principal Node
-				for m in findByName(principalPrefix + pn + '*'):
+				for m in findByName(principalPrefix + principalName + '*'):
 					if m.type() == 'Node':
 						if objId:
 							m.set('objectID', objId)
@@ -129,4 +151,4 @@ def principalBackToTown(vrsceneDir, proxyPrefix, principalPrefix, principalList)
 	# adjust light linking
 	litLinkingAdj(litLink_maya, proxyPrefix, principalPrefix, principalList)
 
-	print 'Done.'
+	print 'Daddy\'s Home, honey.'

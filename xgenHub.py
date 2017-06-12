@@ -8,7 +8,7 @@ For implant versioning to our xgen workflow.
 
 '''
 
-import os
+import os, sys
 import json
 from contextlib import contextmanager
 import shutil
@@ -48,10 +48,12 @@ def linkedCheck(func):
 class MsXGenHub():
 	"""docstring for ClassName"""
 	def __init__(self):
-		self.xgWork = xg.getProjectPath() + 'xgen/collections'
-		self.anchor = xg.getProjectPath() + 'xgen/xgenRepo.anchor'
+		self.xgWork = str(pm.workspace(q= 1, rd= 1)) + 'xgen/collections'
+		self.anchor = str(pm.workspace(q= 1, rd= 1)) + 'xgen/xgenRepo.anchor'
 		self.dirBake = 'vBaked'
 		self.dirAnim = 'sim_'
+		self.proxyPrefix = 'xgenHairProxy_'
+		self.princPrefix = 'xgenHairPrinc_'
 		self.xgShotAttr = 'custom_string_shotName'
 		self.snapshotExt = '.bmp'
 		self.snapshotTmp = 'C:/temp/xgenHubSnap_%d' + self.snapshotExt
@@ -61,6 +63,8 @@ class MsXGenHub():
 		self.vsRepo = ''
 		# get versionRepo path from working anchor
 		if os.path.isfile(self.anchor):
+			print self.anchor
+			print '------------'
 			with open(self.anchor) as anchor:
 				content = anchor.readlines()
 			self.vsRepo = content[-1]
@@ -68,6 +72,7 @@ class MsXGenHub():
 		if self.vsRepo and os.path.exists(self.vsRepo):
 			self.linked = True
 			self.projPath = self.vsRepo.replace('xgen/.version', '')
+			self.hatchScripts()
 		else:
 			pm.warning('[XGen Hub] : versionRepo not linked yet.')
 
@@ -111,6 +116,38 @@ class MsXGenHub():
 			anchor.write(content)
 		self.linked = True
 
+		self.hatchScripts()
+
+
+	def hatchScripts(self):
+		"""doc"""
+		scriptDir = pm.workspace.path + '/' + pm.workspace.fileRules['scripts']
+
+		mVrsInitScript = '' \
+		+ '# ' \
+		+ '# @author: davidpower' \
+		+ '# ' \
+		+ '#  For V-Ray Post Translate Python Script' \
+		+ '#  to import modules from scripts folder in the workspace on the fly' \
+		+ '# ' \
+		+ 'import pymel.core as pm' \
+		+ 'def getDaddy():' \
+		+ '	vrsceneList = []; paletteList = []' \
+		+ '	for dag in pm.ls("prefix*", typ= "transform"):' \
+		+ '		if dag.hasAttr("vrscenePath"): vrsceneList.append(dag.getAttr("vrscenePath"))' \
+		+ '		if dag.hasAttr("paletteName"): paletteList.append(dag.getAttr("paletteName"))' \
+		+ '	return [vrsceneList, paletteList, "' + self.proxyPrefix + '", "' + self.princPrefix + '"]'
+
+		mVrsInitScriptPath = scriptDir + '/mVrsInit.py'
+		if not os.path.isfile(mVrsInitScriptPath):
+			with open(mVrsInitScriptPath, 'w') as scriptFile:
+				scriptFile.write(mVrsInitScript)
+
+		mVRaySceneSrc = '/'.join([os.path.dirname(__file__), 'mVRay', 'mVRayScene.py'])
+		mVRaySceneDst = scriptDir + '/mVRayScene.py'
+		if not os.path.isfile(mVRaySceneDst) and os.path.isfile(mVRaySceneSrc):
+			shutil.copyfile(mVRaySceneSrc, mVRaySceneDst)
+
 
 	def paletteVerDir(self, palName, version, raw= None):
 		"""doc"""
@@ -129,7 +166,7 @@ class MsXGenHub():
 
 	def getVRaySceneFileRepo(self):
 		"""doc"""
-		return '/'.join([self.projPath, 'renderData', 'xgen_vrscene'])
+		return self.projPath + '/'.join(['renderData', 'xgen_vrscene'])
 
 
 	def getVRaySceneFilePath(self, palName, shotName):
@@ -279,7 +316,7 @@ class MsXGenHub():
 		# IMPORT PALETTE
 		palName = base.importPalette(xgenFile, delta, '')
 		# update the palette with the current project
-		xg.setAttr('xgProjectPath', xg.getProjectPath(), palName)
+		xg.setAttr('xgProjectPath', str(pm.workspace(q= 1, rd= 1)), palName)
 		dataPath = xg.paletteRootVar() + '/' + palName
 		xg.setAttr('xgDataPath', dataPath, palName)
 		# create imported palette folder
@@ -579,21 +616,48 @@ class MsXGenHub():
 		return True
 
 	@linkedCheck
-	def generateVRayPostPythonScript(self, palName, shotName):
+	def connectVRayScene(self, palName, shotName):
 		"""doc"""
 		renderGlob = pm.PyNode('defaultRenderGlobals')
 		if not renderGlob.currentRenderer.get() == 'vray':
 			self.notifyMsg('Current Renderer is Not V-Ray !', 2)
 			return None
 
+		# hatch prxoy cube
+		proxyNodeName = self.proxyPrefix + palName
+		if pm.PyNode(proxyNodeName):
+			pm.delete(pm.PyNode(proxyNodeName))
+		customAttrs = {
+			'vrscenePath': self.getVRaySceneFilePath(palName, shotName),
+			'paletteName': palName,
+			}
+		prxoy = pm.polyCube(n= proxyNodeName, ch= False)[0]
+		for attr in customAttrs:
+			prxoy.addAttr(attr, dataType= 'string', k= False)
+			prxoy.setAttr(attr, str(customAttrs[attr]), l= True)
+
+		# hatch mel render callback
+		vrsCallback = 'python("import mVrsInit;yourDaddy=mVrsInit.getDaddy()")'
+		melCallback = renderGlob.preMel.get()
+		if not vrsCallback in melCallback: renderGlob.preMel.set(melCallback + ';' + vrsCallback)
+
+		# make script
+		scriptContent = [
+			'# [ XGen Hub ] Start #',
+			'# Please Do Not Edit #',
+			'import mVRayScene',
+			'mVRayScene.kickProxyOutWith(yourDaddy)',
+			'# [ XGen Hub ]  End #'
+			]
 		# get postScript
 		vraySet = mRender.getVRaySettingsNode()
 		postScript = vraySet.postTranslatePython.get()
 		# check if there are already have we generated script
-		
-		# put
-		postScript += '\n'*3 + '# Following Script is auto generated from [XGen Hub] #\n'
+		if not scriptContent[0] in postScript: postScript = '\n'.join([postScript].extend(scriptContent))
+		# set postScript
 		vraySet.postTranslatePython.set(postScript)
+
+		return True
 
 	@linkedCheck
 	def exportFullPackage(self, palName, version, bake= False, anim= False):

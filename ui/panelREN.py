@@ -19,7 +19,6 @@ def makePanel(cls, switch):
 	global col_ope1
 	global col_ope2
 	global pal_opMenu
-	global ani_textFd
 	global brn_opMenu
 	global sht_opMenu
 
@@ -27,7 +26,6 @@ def makePanel(cls, switch):
 	col_ope2 = cls.uiName + 'col_ope2'
 
 	pal_opMenu = cls.uiName + 'pal_opMenu'
-	ani_textFd = cls.uiName + 'ani_textFd'
 	brn_opMenu = cls.uiName + 'brn_opMenu'
 	sht_opMenu = cls.uiName + 'sht_opMenu'
 
@@ -47,8 +45,7 @@ def makePanel(cls, switch):
 		pm.text(l= '  + Collection', h= 20)
 		pal_opMenu = pm.optionMenu(w= 140)
 		if switch:
-			for pal in pm.ls(type= 'xgmPalette'):
-				pm.menuItem(pal.name(), p= pal_opMenu)
+			pass
 		else:
 			if cls.linked:
 				palList = os.listdir(cls.vsRepo)
@@ -59,8 +56,7 @@ def makePanel(cls, switch):
 		# CHD 1
 		pm.columnLayout(cal= 'left')
 		if switch:
-			pm.text(l= '  + ANIM Branch', h= 20)
-			ani_textFd = pm.textField(text= '', w= 100, en= False)
+			pass
 		else:
 			pm.text(l= '  + ANIM Branch', h= 20)
 			brn_opMenu = pm.optionMenu(w= 100)
@@ -77,10 +73,7 @@ def makePanel(cls, switch):
 	shotRow = pm.rowLayout(nc= 1, vis= switch)
 	if shotRow:
 		# CHD 0
-		pm.columnLayout(cal= 'left')
-		pm.text(l= '  * Shot Name', h= 20)
-		txt_shot = pm.textField(w= 140, en= False)
-		pm.setParent('..')
+		pass
 	pm.setParent('..')
 
 	# *********************************************
@@ -113,24 +106,6 @@ def makePanel(cls, switch):
 				verList = list(set(verList))
 			for ver in verList:
 				pm.menuItem(ver, p= brn_opMenu)
-
-	def animBranchName(*args):
-		"""doc"""
-		if pal_opMenu.getItemListLong():
-			palName = str(pal_opMenu.getValue())
-			branchName = cls.getAnimBranch(palName)[len(cls.dirAnim):]
-			pm.textField(ani_textFd, e= 1, text= branchName)
-		else:
-			pm.textField(ani_textFd, e= 1, text= '')
-
-	def getShotName(*args):
-		"""doc"""
-		if pal_opMenu.getItemListLong():
-			palName = str(pal_opMenu.getValue())
-			shotName = cls.getAnimShotName(palName)
-			pm.textField(txt_shot, e= 1, text= shotName)
-		else:
-			pm.textField(txt_shot, e= 1, text= '')
 
 	def shotNameList(*args):
 		"""doc"""
@@ -169,14 +144,9 @@ def makePanel(cls, switch):
 	def process(mqsb, *args):
 		"""doc"""
 		if mqsb.isChecked():
-			# export
-			if not pal_opMenu.getNumberOfItems():
-				pm.warning('[XGen Hub] : There are no collections in current scene.')
-				return None
-			palName = str(pal_opMenu.getValue())
-			cls.exportVRaySceneFile(palName)
+			pass
 		else:
-			# import
+			# grab script
 			if not pal_opMenu.getNumberOfItems():
 				pm.warning('[XGen Hub] : There are no collections in repo.')
 				return None
@@ -202,24 +172,13 @@ def makePanel(cls, switch):
 				return None
 
 			palName = str(pal_opMenu.getValue())
-			version = cls.dirAnim + str(brn_opMenu.getValue())
 			shotName = str(sht_opMenu.getValue())
-			cls.importAnimResult(palName, version, shotName)
+			cls.connectVRayScene(palName, shotName)
 
 
 	# MODIFY
 	if switch:
-		for i in range(5):
-			pm.button(cls.snapBtnn + str(i+1), e= 1, en= 1, c= partial(cls.snapshot_take, i),
-				bgc= cls.snapRest)
-
-		def animBranchAndShotName(*args):
-			"""doc"""
-			animBranchName();getShotName()
-		pm.optionMenu(pal_opMenu, e= 1, cc= animBranchAndShotName)
-
-		#load
-		animBranchAndShotName()
+		pass
 	else:
 		for i in range(5):
 			pm.button(cls.snapBtnn + str(i+1), e= 1, c= partial(snapshot_show, i))
