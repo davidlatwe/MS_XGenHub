@@ -121,12 +121,31 @@ class MsXGenHub():
 		"""doc"""
 		scriptDir = self.getRenderScriptDir()
 
+		# mel script for set module import path
+		mImportVrs = '' \
+		+ '// \n' \
+		+ '// @author: davidpower\n' \
+		+ '// \n' \
+		+ '//  For V-Ray Post Translate Python Script\n' \
+		+ '//  to import modules from scripts folder in the workspace on the fly\n' \
+		+ '// \n' \
+		+ 'python("import sys");\n' \
+		+ 'python("scriptDir = \\"' + scriptDir + '\\"");\n' \
+		+ 'python("if not scriptDir in sys.path: sys.path.append(scriptDir)");\n' \
+		+ 'python("import mVrsInit;reload(mVrsInit);yourDaddy=mVrsInit.getDaddy()");\n'
+
+		mImportVrsPath = scriptDir + '/mImportVrs.mel'
+		if not os.path.isfile(mImportVrsPath):
+			with open(mImportVrsPath, 'w') as scriptFile:
+				scriptFile.write(mImportVrs)
+
+		# script to parse args
 		mVrsInitScript = '' \
 		+ '# \n' \
 		+ '# @author: davidpower\n' \
 		+ '# \n' \
 		+ '#  For V-Ray Post Translate Python Script\n' \
-		+ '#  to import modules from scripts folder in the workspace on the fly\n' \
+		+ '#  parse args to vray post python script\n' \
 		+ '# \n' \
 		+ 'import pymel.core as pm\n' \
 		+ 'def getDaddy():\n' \
@@ -141,6 +160,7 @@ class MsXGenHub():
 			with open(mVrsInitScriptPath, 'w') as scriptFile:
 				scriptFile.write(mVrsInitScript)
 
+		# script to process .vrscene file
 		mVRaySceneSrc = '/'.join([os.path.dirname(__file__), 'mVRay', 'mVRayScene.py'])
 		mVRaySceneDst = scriptDir + '/mVRayScene.py'
 		if not os.path.isfile(mVRaySceneDst) and os.path.isfile(mVRaySceneSrc):
@@ -650,7 +670,7 @@ class MsXGenHub():
 			prxoy.setAttr(attr, str(customAttrs[attr]), l= True)
 
 		# hatch mel render callback
-		vrsCallback = 'python("import mVrsInit;reload(mVrsInit);yourDaddy=mVrsInit.getDaddy()")'
+		vrsCallback = 'rehash;source "mImportVrs.mel";'
 		melCallback = renderGlob.preMel.get() if renderGlob.preMel.get() else ''
 		if not vrsCallback in melCallback:
 			renderGlob.preMel.set(melCallback + (';' if melCallback else '') + vrsCallback)
@@ -673,11 +693,6 @@ class MsXGenHub():
 			postScript = '\n'.join(postScript)
 		# set postScript
 		vraySet.postTranslatePython.set(postScript)
-
-		# set module import path
-		scriptDir = self.getRenderScriptDir()
-		if not scriptDir in sys.path:
-			sys.path.append(scriptDir)
 
 		return True
 
@@ -1028,6 +1043,8 @@ class MsXGenHub():
 			for fxm in xg.fxModules(palName, desc):
 				if xg.fxModuleType(palName, desc, fxm) == 'AnimWiresFXModule':
 					xg.setAttr('refWiresFrame', refWiresFrame, palName, desc, fxm)
+
+		self.refresh('Full')
 
 
 	def ioAttrPreset(self, nodeType, save):

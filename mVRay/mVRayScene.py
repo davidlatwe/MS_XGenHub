@@ -97,6 +97,42 @@ def litLinkingAdj(litLinkDict, proxyPrefix, principalPrefix, principalList):
 	litLinkSet.set('ignored_shadow_lights', litLinkDict['ignored_shadow_lights'])
 
 
+def replaceMaterial(vrayNode, replaceMtl):
+	"""
+	keep node but replace material
+	"""
+	originMtl = vrayNode.get('material')
+	if originMtl and (originMtl.type() == 'MtlRenderStats' or originMtl.type() == 'MtlWrapper'):
+		if originMtl.type() == 'MtlWrapper':
+			originMtl.set('base_material', replaceMtl)
+		else:
+			originMtl_base = originMtl.get('base_mtl')
+			if originMtl_base.type() == 'MtlWrapper':
+				originMtl_base.set('base_material', replaceMtl)
+			else:
+				originMtl.set('base_mtl', replaceMtl)
+	else:
+		vrayNode.set('material', replaceMtl)
+
+
+def replaceNodeParamValue(originNode, replaceNodeName):
+	"""
+	get proxy node render attribute values and set to replacement node
+	"""
+	# modify principal Node
+	for replaceNode in findByName(replaceNodeName + '*'):
+		if replaceNode.type() == 'Node':
+			# proxy ObjectID
+			if originNode.has('objectID'):
+				replaceNode.set('objectID', originNode.get('objectID'))
+			# proxy primary vis
+			if originNode.has('primary_visibility'):
+				replaceNode.set('primary_visibility', originNode.get('primary_visibility'))
+			# proxy material
+			if originNode.has('material'):
+				replaceNode.set('material', originNode.get('material'))
+
+
 def kickProxyOutWith(yourDaddy):
 	"""
 	@yourDaddy  this is a args list, for shorter line purpose
@@ -112,43 +148,29 @@ def kickProxyOutWith(yourDaddy):
 	litLink_maya = saveLightLinker()
 	
 	# add all vrscene
+	DaddyArrived = False
 	for idx, vrsFile in enumerate(vrsceneList):
-		addSceneContent(vrsFile, prefix= principalPrefix + principalList[idx])
+		# check if proxy exists before we load principals
+		if findByName(proxyPrefix + principalList[idx] + '*'):
+			DaddyArrived = True
+			addSceneContent(vrsFile, prefix= principalPrefix + principalList[idx])
 
-	# modify object property(mtlwrapper)
-	for principalName in principalList:
-		for vrayPlugin in findByName(proxyPrefix + principalName + '*'):
-			if vrayPlugin.type() == 'Node':
-				# proxy ObjectID
-				objId = ''
-				if vrayPlugin.has('objectID'):
-					objId = vrayPlugin.get('objectID')
-				# proxy primary vis
-				primVis = ''
-				if vrayPlugin.has('primary_visibility'):
-					primVis = vrayPlugin.get('primary_visibility')
-				# proxy MtlWrapper
-				wrapmtl = ''
-				mtl = vrayPlugin.get('material')
-				if mtl.type() == 'MtlWrapper':
-					wrapmtl = mtl
-				# modify principal Node
-				for m in findByName(principalPrefix + principalName + '*'):
-					if m.type() == 'Node':
-						if objId:
-							m.set('objectID', objId)
-						if primVis:
-							m.set('primary_visibility', primVis)
-						if wrapmtl:
-							m.set('material', wrapmtl)
-				# jump to find next principal
-				break
+	if DaddyArrived:
+		# modify object property(mtlwrapper)
+		for principalName in principalList:
+			for proxyNode in findByName(proxyPrefix + principalName + '*'):
+				if proxyNode.type() == 'Node':
+					replaceNodeParamValue(proxyNode, principalPrefix + principalName)
+					# jump to find next principal
+					break
 
-	# remove placeholder
-	for vrayPlugin in findByName(proxyPrefix + '*'):
-		delete(vrayPlugin)
+		# remove placeholder
+		for proxyNode in findByName(proxyPrefix + '*'):
+			delete(proxyNode)
 
-	# adjust light linking
-	litLinkingAdj(litLink_maya, proxyPrefix, principalPrefix, principalList)
+		# adjust light linking
+		litLinkingAdj(litLink_maya, proxyPrefix, principalPrefix, principalList)
 
-	print 'Daddy\'s Home, honey.'
+		print 'Daddy\'s Home, honey.'
+	else:
+		print 'Daddy didn\'t come.'
