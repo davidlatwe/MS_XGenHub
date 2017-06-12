@@ -128,6 +128,9 @@ def replaceNodeParamValue(originNode, replaceNodeName):
 			# proxy primary vis
 			if originNode.has('primary_visibility'):
 				replaceNode.set('primary_visibility', originNode.get('primary_visibility'))
+			# proxy visible
+			if originNode.has('visible'):
+				replaceNode.set('visible', originNode.get('visible'))
 			# proxy material
 			if originNode.has('material'):
 				replaceNode.set('material', originNode.get('material'))
