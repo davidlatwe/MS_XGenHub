@@ -63,8 +63,6 @@ class MsXGenHub():
 		self.vsRepo = ''
 		# get versionRepo path from working anchor
 		if os.path.isfile(self.anchor):
-			print self.anchor
-			print '------------'
 			with open(self.anchor) as anchor:
 				content = anchor.readlines()
 			self.vsRepo = content[-1]
@@ -124,19 +122,19 @@ class MsXGenHub():
 		scriptDir = pm.workspace.path + '/' + pm.workspace.fileRules['scripts']
 
 		mVrsInitScript = '' \
-		+ '# ' \
-		+ '# @author: davidpower' \
-		+ '# ' \
-		+ '#  For V-Ray Post Translate Python Script' \
-		+ '#  to import modules from scripts folder in the workspace on the fly' \
-		+ '# ' \
-		+ 'import pymel.core as pm' \
-		+ 'def getDaddy():' \
-		+ '	vrsceneList = []; paletteList = []' \
-		+ '	for dag in pm.ls("prefix*", typ= "transform"):' \
-		+ '		if dag.hasAttr("vrscenePath"): vrsceneList.append(dag.getAttr("vrscenePath"))' \
-		+ '		if dag.hasAttr("paletteName"): paletteList.append(dag.getAttr("paletteName"))' \
-		+ '	return [vrsceneList, paletteList, "' + self.proxyPrefix + '", "' + self.princPrefix + '"]'
+		+ '# \n' \
+		+ '# @author: davidpower\n' \
+		+ '# \n' \
+		+ '#  For V-Ray Post Translate Python Script\n' \
+		+ '#  to import modules from scripts folder in the workspace on the fly\n' \
+		+ '# \n' \
+		+ 'import pymel.core as pm\n' \
+		+ 'def getDaddy():\n' \
+		+ '	vrsceneList = []; paletteList = []\n' \
+		+ '	for dag in pm.ls("prefix*", typ= "transform"):\n' \
+		+ '		if dag.hasAttr("vrscenePath"): vrsceneList.append(dag.getAttr("vrscenePath"))\n' \
+		+ '		if dag.hasAttr("paletteName"): paletteList.append(dag.getAttr("paletteName"))\n' \
+		+ '	return [vrsceneList, paletteList, "' + self.proxyPrefix + '", "' + self.princPrefix + '"]\n'
 
 		mVrsInitScriptPath = scriptDir + '/mVrsInit.py'
 		if not os.path.isfile(mVrsInitScriptPath):
