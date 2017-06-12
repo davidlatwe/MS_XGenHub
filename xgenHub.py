@@ -621,7 +621,8 @@ class MsXGenHub():
 		deltaFile = '/'.join([deltaPath, palName + '.xgd'])
 
 		# import
-		self.importPalette(palName, version, False, False, True, [deltaFile])
+		if not self.importPalette(palName, version, False, False, True, [deltaFile]):
+			return None
 
 		# get wires.abc
 		wiresAbc = {}
