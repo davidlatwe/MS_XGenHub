@@ -710,10 +710,15 @@ class MsXGenHub():
 		if bake:
 			for desc in xg.descriptions(palName):
 				# bake Noise modifiers
+				# fxModules evals from bottom to top
+				clumpModLast = ''
 				for fxm in xg.fxModules(palName, desc):
 					if xg.fxModuleType(palName, desc, fxm) == 'ClumpingFXModule':
-						# set cvAttr to True, for anim modifiers which needs clump
+						# set the top clumpingMod cvAttr to True, for anim modifiers which needs clump
+						if clumpModLast:
+							xg.setAttr('cvAttr', 'false', palName, desc, clumpModLast)
 						xg.setAttr('cvAttr', 'true', palName, desc, fxm)
+						clumpModLast = fxm
 					if xg.fxModuleType(palName, desc, fxm) == 'NoiseFXModule':
 						# temporarily turn off lod so we dont bake it in
 						lod = xg.getAttr('lodFlag', palName, desc)
