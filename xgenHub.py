@@ -136,6 +136,8 @@ class MsXGenHub():
 
 		mImportVrsPath = scriptDir + '/mImportVrs.mel'
 		if not os.path.isfile(mImportVrsPath):
+			if not os.path.isdir(os.path.dirname(mImportVrsPath)):
+				os.makedirs(os.path.dirname(mImportVrsPath))
 			with open(mImportVrsPath, 'w') as scriptFile:
 				scriptFile.write(mImportVrs)
 
@@ -157,6 +159,8 @@ class MsXGenHub():
 
 		mVrsInitScriptPath = scriptDir + '/mVrsInit.py'
 		if not os.path.isfile(mVrsInitScriptPath):
+			if not os.path.isdir(os.path.dirname(mVrsInitScriptPath)):
+				os.makedirs(os.path.dirname(mVrsInitScriptPath))
 			with open(mVrsInitScriptPath, 'w') as scriptFile:
 				scriptFile.write(mVrsInitScript)
 
