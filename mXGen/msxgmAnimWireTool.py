@@ -58,6 +58,7 @@ def exportCurvesMel(palName, descName, fxmName):
 	# get clumpCurves.mel file path
 	curvesMelPath = xg.getAttr('_fullExportDir', palName, descName, fxmName)
 	# remove clumpCurves.mel's last cmd : "xgmMakeCurvesDynamic;"
+	print 'Reading curves mel. -> ' + curvesMelPath
 	curvesMel = open(curvesMelPath, 'r').readlines()
 	cmdIndex = curvesMel.index('xgmMakeCurvesDynamic;\n')
 	curvesMel[cmdIndex] = ''
