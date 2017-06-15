@@ -245,6 +245,17 @@ class MsXGenHub():
 			pm.refresh()
 
 
+	def previewAutoUpdate(self, auto):
+		"""
+		update preview on/off
+		"""
+		de = xgg.DescriptionEditor
+		if de != None:
+			# set auto update
+			de.setPlayblast(auto)
+			de.updatePreviewControls()
+
+
 	def clearPreview(self):
 		"""
 		clear preview
@@ -289,6 +300,31 @@ class MsXGenHub():
 				return 'Groom'
 			else:
 				return 'Attribute'
+
+
+	def setPreviewInCam(self, palName, valueDict= None):
+		"""doc"""
+		if valueDict:
+			# restore value
+			for desc in xg.descriptions(palName):
+				xg.setAttr('inCameraOnly', valueDict[desc], palName, desc, 'GLRenderer')
+			return None
+		else:
+			# set to false if no value in
+			valueDict = {}
+			for desc in xg.descriptions(palName):
+				valueDict[desc] = xg.getAttr('inCameraOnly', palName, desc, 'GLRenderer')
+				xg.setAttr('inCameraOnly', 'false', palName, desc, 'GLRenderer')
+			return valueDict
+
+
+	def getPaletteBoundGeo(self, palName):
+		"""doc"""
+		bGeoList = []
+		for desc in xg.descriptions(palName):
+			bGeoList.extend(xg.boundGeometry(palName, desc))
+		bGeoList = list(set(bGeoList))
+		return bGeoList
 	
 	@linkedCheck
 	def snapshotImgPath(self, palName, version, index, shotName= None):
@@ -621,7 +657,11 @@ class MsXGenHub():
 		deltaFile = '/'.join([deltaPath, palName + '.xgd'])
 
 		# import
-		if not self.importPalette(palName, version, False, False, True, [deltaFile]):
+		if os.path.isfile(deltaFile):
+			if not self.importPalette(palName, version, False, False, True, [deltaFile]):
+				return None
+		else:
+			pm.error('[XGen Hub] : .xgd file not exists. Import stopped. -> ' + deltaFile)
 			return None
 
 		# get wires.abc
@@ -952,8 +992,19 @@ class MsXGenHub():
 		pm.hide(all= 1)
 		# show xgen palette
 		pm.setAttr(palName + '.v', True)
+		'''
+		# show bound geo but set primVis to off
+		#bGeoList = self.getPaletteBoundGeo(palName)
+		#for bGeo in bGeoList:
+		#	pm.PyNode(bGeo).visibility.set(1)
+		#	pm.PyNode(bGeo).getShape().primaryVisibility.set(0)
+		'''
+		# set preview only in cam to false
+		prvValueDict = self.setPreviewInCam(palName)
 		# get start, end frame from time slider
 		start, end = self.getTimeSliderMinMax()
+		# trun on autoupdate
+		self.previewAutoUpdate(True)
 		# set renderer to VRay and time range
 		renderGlob = pm.PyNode('defaultRenderGlobals')
 		renderGlob.currentRenderer.set('vray')
@@ -998,6 +1049,9 @@ class MsXGenHub():
 			content += include % (vrsceneFile.split('.')[0], vt)
 		with open(vrsceneFile, 'w') as vrscene:
 			vrscene.write(content)
+
+		# restore preview only in cam value
+		self.setPreviewInCam(palName, prvValueDict)
 
 		self.notifyMsg('File .vrscene Export Complete !', 0)
 
