@@ -131,7 +131,7 @@ def makePanel(cls, switch):
 		if des_opMenu.getItemListLong():
 			des_opMenu.clear()
 		pm.menuItem('All descriptions', p= des_opMenu)
-		if cls.linked and os.listdir(cls.vsRepo):
+		if cls.linked and os.listdir(cls.vsRepo) and pal_opMenu.getItemListLong() and ver_opMenu.getItemListLong():
 			palName = pal_opMenu.getValue()
 			version = pm.optionMenu(ver_opMenu, q= 1, v= 1)
 			palVerPath = os.path.join(cls.vsRepo, palName, version)
@@ -166,7 +166,7 @@ def makePanel(cls, switch):
 	def snapshot_show(index, *args):
 		"""doc"""
 		imgPath = cls.snapNull
-		if cls.linked and os.listdir(cls.vsRepo) and pal_opMenu.getItemListLong():
+		if cls.linked and os.listdir(cls.vsRepo) and pal_opMenu.getItemListLong() and ver_opMenu.getItemListLong():
 			palName = pal_opMenu.getValue()
 			version = pm.optionMenu(ver_opMenu, q= 1, v= 1)
 			if palName and version:
