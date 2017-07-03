@@ -55,6 +55,7 @@ class MsXGenHub():
 		self.proxyPrefix = 'xgenHairProxy_'
 		self.princPrefix = 'xgenHairPrinc_'
 		self.xgShotAttr = 'custom_string_shotName'
+		self.xgRefFrame = 'custom_string_refFrame'
 		self.snapshotExt = '.bmp'
 		self.snapshotTmp = 'C:/temp/xgenHubSnap_%d' + self.snapshotExt
 		self.linked = False
@@ -682,6 +683,9 @@ class MsXGenHub():
 					xg.setAttr('liveMode', 'false', palName, desc, fxm)
 					xg.setAttr('wiresFile', wiresAbc[desc], palName, desc, fxm)
 
+		# set ref frame
+		self.setRefWiresFrame(xg.getAttr(self.xgRefFrame, palName))
+
 		# assign shaders
 
 		# render settings
@@ -940,6 +944,11 @@ class MsXGenHub():
 		if not xg.attrExists(self.xgShotAttr, palName):
 			xg.addCustomAttr(self.xgShotAttr, palName)
 		xg.setAttr(self.xgShotAttr, shotName, palName)
+
+		# add nucleus startFrame attribute to xgen and save in xgen delta later
+		if not xg.attrExists(self.xgRefFrame, palName):
+			xg.addCustomAttr(self.xgRefFrame, palName)
+		xg.setAttr(self.xgRefFrame, str(pm.PyNode('nucleus1').startFrame.get()), palName)
 		
 		# get resolved repo shotName path
 		deltaPath = self.paletteDeltaDir(palName, version, shotName)
@@ -1067,8 +1076,8 @@ class MsXGenHub():
 		self.clearPreview()
 
 		nHairAttrs = {
-			'noStretch': 1,
-			'stretchResistance': 100,
+			'noStretch': 0,
+			'stretchResistance': 600,
 			'compressionResistance': 100,
 			'startCurveAttract': 0.3,
 			'mass': 0.05
@@ -1099,14 +1108,30 @@ class MsXGenHub():
 			# set some attributes
 			for attr in nHairAttrs:
 				hsys.setAttr(attr, nHairAttrs[attr])
+			# set follicles
+			focGrp = pm.ls(desc + '_hairSystemFollicles', type= 'transform')
+			if focGrp and focGrp[0].listRelatives(ad= 1, typ= 'follicle'):
+				follicles = focGrp[0].listRelatives(ad= 1, typ= 'follicle')
+			for foc in follicles:
+				foc.fixedSegmentLength.set(1)
+
+		if pm.objExists('nucleus1'):
+			jobs = pm.scriptJob(lj= 1)
+			for job in jobs:
+				if 'nucleus1.startFrame' in job:
+					pm.scriptJob(k= int(job.split(':')[0]))
+			pm.scriptJob(ac= ['nucleus1.startFrame', self.setRefWiresFrame])
 
 
-	def setRefWiresFrame(self, palName, refWiresFrame):
+	def setRefWiresFrame(self, refWiresFrame= None):
 		"""doc"""
-		for desc in xg.descriptions(palName):
-			for fxm in xg.fxModules(palName, desc):
-				if xg.fxModuleType(palName, desc, fxm) == 'AnimWiresFXModule':
-					xg.setAttr('refWiresFrame', refWiresFrame, palName, desc, fxm)
+		if not refWiresFrame:
+			refWiresFrame = str(pm.PyNode('nucleus1').startFrame.get())
+		for palName in xg.palettes():
+			for desc in xg.descriptions(palName):
+				for fxm in xg.fxModules(palName, desc):
+					if xg.fxModuleType(palName, desc, fxm) == 'AnimWiresFXModule':
+						xg.setAttr('refWiresFrame', refWiresFrame, palName, desc, fxm)
 
 		self.refresh('Full')
 

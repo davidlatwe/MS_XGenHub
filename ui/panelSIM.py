@@ -161,10 +161,8 @@ def makePanel(cls, switch):
 
 	def refWiresFrameEnterCmd(*args):
 		"""doc"""
-		palName = str(pal_opMenu.getValue())
 		refWiresFrame = str(pm.intField(inf_refwir, q= 1, v= 1))
-		if palName:
-			cls.setRefWiresFrame(palName, refWiresFrame)
+		cls.setRefWiresFrame(refWiresFrame)
 
 
 	def process(mqsb, *args):
