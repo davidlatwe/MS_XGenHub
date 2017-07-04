@@ -948,7 +948,7 @@ class MsXGenHub():
 		# add nucleus startFrame attribute to xgen and save in xgen delta later
 		if not xg.attrExists(self.xgRefFrame, palName):
 			xg.addCustomAttr(self.xgRefFrame, palName)
-		xg.setAttr(self.xgRefFrame, str(pm.PyNode('nucleus1').startFrame.get()), palName)
+		xg.setAttr(self.xgRefFrame, str(int(pm.PyNode('nucleus1').startFrame.get())), palName)
 		
 		# get resolved repo shotName path
 		deltaPath = self.paletteDeltaDir(palName, version, shotName)
@@ -1085,10 +1085,12 @@ class MsXGenHub():
 
 		# get active AnimWire module list
 		animWireDict = {}
+		refWiresFrame = ''
 		for desc in xg.descriptions(palName):
 			for fxm in xg.fxModules(palName, desc):
 				if xg.fxModuleType(palName, desc, fxm) == 'AnimWiresFXModule':
 					if xg.getAttr('active', palName, desc, fxm) == 'true':
+						refWiresFrame = xg.getAttr('refWiresFrame', palName, desc, fxm)
 						hsysName = self.getHairSysName(desc)
 						hsysTransforms = [str(hsys.getParent().name()) for hsys in pm.ls(type= 'hairSystem')]
 						if hsysName in hsysTransforms:
@@ -1121,12 +1123,16 @@ class MsXGenHub():
 				if 'nucleus1.startFrame' in job:
 					pm.scriptJob(k= int(job.split(':')[0]))
 			pm.scriptJob(ac= ['nucleus1.startFrame', self.setRefWiresFrame])
+			pm.PyNode('nucleus1').startFrame.set(int(refWiresFrame))
 
 
 	def setRefWiresFrame(self, refWiresFrame= None):
 		"""doc"""
 		if not refWiresFrame:
-			refWiresFrame = str(pm.PyNode('nucleus1').startFrame.get())
+			refWiresFrame = str(int(pm.PyNode('nucleus1').startFrame.get()))
+		else:
+			if pm.objExists('nucleus1'):
+				pm.PyNode('nucleus1').startFrame.set(int(refWiresFrame))
 		for palName in xg.palettes():
 			for desc in xg.descriptions(palName):
 				for fxm in xg.fxModules(palName, desc):
