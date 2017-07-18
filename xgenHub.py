@@ -1116,6 +1116,11 @@ class MsXGenHub():
 				follicles = focGrp[0].listRelatives(ad= 1, typ= 'follicle')
 			for foc in follicles:
 				foc.fixedSegmentLength.set(1)
+				foc.segmentLength.set(20)
+				# set rebuildCurve.rebuildType to update follicle changes
+				cuv = pm.listConnections(foc, s= 1, d= 0, type= 'nurbsCurve', sh= 1)
+				rebuildCuv = pm.listConnections(cuv, s= 1, d= 0, type= 'rebuildCurve')[0]
+				rebuildCuv.rebuildType.set(0)
 
 		if pm.objExists('nucleus1'):
 			jobs = pm.scriptJob(lj= 1)
