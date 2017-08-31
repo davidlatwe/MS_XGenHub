@@ -1036,7 +1036,7 @@ class MsXGenHub():
 			'misc_exportGeometry': 1,
 			'misc_exportMaterials': 1,
 			'misc_exportTextures': 1,
-			'misc_exportBitmaps': 0,
+			'misc_exportBitmaps': 1,
 			'misc_eachFrameInFile': 0,
 			'misc_meshAsHex': 1,
 			'misc_transformAsHex': 1,
@@ -1057,7 +1057,7 @@ class MsXGenHub():
 		for _ in " "*7: content += vrscene.readline()
 		vrscene.close()
 		include = '#include "%s_%s.vrscene"\n'
-		vrsType = ['nodes', 'geometry', 'materials', 'textures']
+		vrsType = ['nodes', 'geometry', 'materials', 'textures', 'bitmaps']
 		for vt in vrsType:
 			content += include % (vrsceneFile.split('.')[0], vt)
 		with open(vrsceneFile, 'w') as vrscene:
@@ -1076,7 +1076,7 @@ class MsXGenHub():
 		self.clearPreview()
 
 		nHairAttrs = {
-			'noStretch': 0,
+			'noStretch': 1,
 			'stretchResistance': 600,
 			'compressionResistance': 100,
 			'startCurveAttract': 0.3,
@@ -1114,13 +1114,14 @@ class MsXGenHub():
 			focGrp = pm.ls(desc + '_hairSystemFollicles', type= 'transform')
 			if focGrp and focGrp[0].listRelatives(ad= 1, typ= 'follicle'):
 				follicles = focGrp[0].listRelatives(ad= 1, typ= 'follicle')
-			for foc in follicles:
-				foc.fixedSegmentLength.set(1)
-				foc.segmentLength.set(20)
-				# set rebuildCurve.rebuildType to update follicle changes
-				cuv = pm.listConnections(foc, s= 1, d= 0, type= 'nurbsCurve', sh= 1)
-				rebuildCuv = pm.listConnections(cuv, s= 1, d= 0, type= 'rebuildCurve')[0]
-				rebuildCuv.rebuildType.set(0)
+			if palName == 'BossHair':
+				for foc in follicles:
+					foc.fixedSegmentLength.set(1)
+					foc.segmentLength.set(20)
+					# set rebuildCurve.rebuildType to update follicle changes
+					cuv = pm.listConnections(foc, s= 1, d= 0, type= 'nurbsCurve', sh= 1)
+					rebuildCuv = pm.listConnections(cuv, s= 1, d= 0, type= 'rebuildCurve')[0]
+					rebuildCuv.rebuildType.set(0)
 
 		if pm.objExists('nucleus1'):
 			jobs = pm.scriptJob(lj= 1)
