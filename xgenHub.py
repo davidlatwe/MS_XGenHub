@@ -1076,7 +1076,9 @@ class MsXGenHub():
 		self.clearPreview()
 
 		nHairAttrs = {
-			'noStretch': 1,
+			# This will cause Maya crash if the dyn-curves shape is weried
+			# xgen NullRender might generate weired shaped curve if scene is too large
+			#'noStretch': 1,
 			'stretchResistance': 600,
 			'compressionResistance': 100,
 			'startCurveAttract': 0.3,

@@ -43,7 +43,7 @@ def nRigidRename(meshPatch, nRigidNameVar):
 			rigid[0].getParent().rename(nRigidNameVar % renameDict[rigidName])
 
 
-def exportCurvesMel(palName, descName, fxmName):
+def _exportCurvesMel(palName, descName, fxmName):
 	"""doc"""
 	# setup
 	value = xg.getAttr('exportDir', palName, descName, fxmName)
@@ -67,6 +67,17 @@ def exportCurvesMel(palName, descName, fxmName):
 	# restore
 	xg.setAttr('exportCurves', 'false', palName, descName, fxmName)
 	xg.setAttr('exportFaces', '', palName, descName, fxmName)
+
+
+def exportCurvesMel(palName, descName, fxmName):
+	"""Replace original "exportCurvesMel", since "xgmNullRender" will fail if scene is too large
+	"""
+	# select guides
+	pm.select(xg.descriptionGuides(descName), replace=True)
+	# guides to curves
+	pm.mel.xgmCreateCurvesFromGuides(0, False)
+	# add patch to selection
+	pm.select(xg.boundGeometry(palName, descName), add=True)
 	
 
 def xgmMakeCurvesDynamic(descHairSysName, collide):
