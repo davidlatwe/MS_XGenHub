@@ -1,7 +1,6 @@
 from maya.OpenMayaUI import MQtUtil
-from shiboken import wrapInstance
-import PySide.QtGui as QtGui
-import PySide.QtCore as QtCore
+from ..vendor.Qt import QtCompat
+from ..vendor.Qt import QtWidgets, QtCore
 
 
 def convert(mguiName):
@@ -11,7 +10,7 @@ def convert(mguiName):
 	:param mguiName: Maya UI Name
 	:type mguiName: string
 	:return: QWidget or subclass instance
-	:rtype: QtGui.QWidget
+	:rtype: QtWidgets.QWidget
 
 	Thanks to Nathan Horne
 	"""
@@ -24,15 +23,15 @@ def convert(mguiName):
 	if ptr is None:
 		return None
 	# Find corresponding class
-	qObj = wrapInstance(long(ptr), QtCore.QObject)
+	qObj = QtCompat.wrapInstance(long(ptr), QtCore.QObject)
 	metaObj = qObj.metaObject()
 	cls = metaObj.className()
 	superCls = metaObj.superClass().className()
-	if hasattr(QtGui, cls):
-		base = getattr(QtGui, cls)
-	elif hasattr(QtGui, superCls):
-		base = getattr(QtGui, superCls)
+	if hasattr(QtWidgets, cls):
+		base = getattr(QtWidgets, cls)
+	elif hasattr(QtWidgets, superCls):
+		base = getattr(QtWidgets, superCls)
 	else:
-		base = QtGui.QWidget
+		base = QtWidgets.QWidget
 
-	return wrapInstance(long(ptr), base)
+	return QtCompat.wrapInstance(long(ptr), base)

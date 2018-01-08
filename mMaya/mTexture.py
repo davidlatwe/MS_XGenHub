@@ -5,8 +5,7 @@ Created on 2017.02.21
 @author: davidpower
 '''
 import os
-import PySide.QtGui as QtGui
-import PySide.QtCore as QtCore
+from ..vendor.Qt import QtGui, QtCore
 
 
 class MQImage(QtGui.QImage):

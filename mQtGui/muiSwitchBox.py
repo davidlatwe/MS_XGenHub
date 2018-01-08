@@ -1,16 +1,14 @@
 from maya.OpenMayaUI import MQtUtil
-from shiboken import wrapInstance
-import PySide.QtGui as QtGui
-import PySide.QtCore as QtCore
+from ..vendor.Qt import QtWidgets, QtCore, QtGui
 import mGetQt as mqt; reload(mqt)
 
-class SwitchBox(QtGui.QCheckBox):
+class SwitchBox(QtWidgets.QCheckBox):
 
 	def __init__(self, *args, **kwargs):
 		"""
 		constructor
 		"""
-		QtGui.QCheckBox.__init__(self)
+		QtWidgets.QCheckBox.__init__(self)
 		''' DEFAULT '''
 		# default size vars
 		self.baseW = 100
@@ -89,7 +87,7 @@ class SwitchBox(QtGui.QCheckBox):
 		if self.toggleCmd:
 			self.execCmd(self.toggleCmd)
 
-		return QtGui.QCheckBox.mousePressEvent(self, *args, **kwargs)
+		return QtWidgets.QCheckBox.mousePressEvent(self, *args, **kwargs)
 
 
 	def paintEvent(self,event):
