@@ -1001,6 +1001,11 @@ class MsXGenHub():
 			pm.error('[XGen Hub] : Couldn\'t get ANIM shotName. Export process stop.')
 			return None
 
+		vraySet = mRender.getVRaySettingsNode()
+		if vraySet.getAttr("sys_distributed_rendering_on"):
+			pm.error('[XGen Hub] : VRay Distributed Rendering should be OFF, process stop.')
+			return None
+
 		# hide everything (root nodes in outliner)
 		pm.hide(all= 1)
 		# show xgen palette
@@ -1026,7 +1031,6 @@ class MsXGenHub():
 		renderGlob.byFrameStep.set(1)
 		# setup vray render settings
 		vrsceneFile = self.getVRaySceneFilePath(palName, shotName)
-		vraySet = mRender.getVRaySettingsNode()
 		vrayAttrs = {
 			'vrscene_render_on': 0,
 			'vrscene_on': 1,
