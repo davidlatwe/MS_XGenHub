@@ -948,7 +948,12 @@ class MsXGenHub():
 		# add nucleus startFrame attribute to xgen and save in xgen delta later
 		if not xg.attrExists(self.xgRefFrame, palName):
 			xg.addCustomAttr(self.xgRefFrame, palName)
-		xg.setAttr(self.xgRefFrame, str(int(pm.PyNode('nucleus1').startFrame.get())), palName)
+
+		if pm.objExists('nucleus1'):
+			_xgRefFrame = str(int(pm.PyNode('nucleus1').startFrame.get()))
+		else:
+			_xgRefFrame = "1"
+		xg.setAttr(self.xgRefFrame, _xgRefFrame, palName)
 		
 		# get resolved repo shotName path
 		deltaPath = self.paletteDeltaDir(palName, version, shotName)
