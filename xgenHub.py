@@ -1013,17 +1013,6 @@ class MsXGenHub():
 			pm.error('[XGen Hub] : VRay Distributed Rendering should be OFF, process stop.')
 			return None
 
-		# hide everything (root nodes in outliner)
-		pm.hide(all= 1)
-		# show xgen palette
-		pm.setAttr(palName + '.v', True)
-		'''
-		# show bound geo but set primVis to off
-		#bGeoList = self.getPaletteBoundGeo(palName)
-		#for bGeo in bGeoList:
-		#	pm.PyNode(bGeo).visibility.set(1)
-		#	pm.PyNode(bGeo).getShape().primaryVisibility.set(0)
-		'''
 		# set preview only in cam to false
 		prvValueDict = self.setPreviewInCam(palName)
 		# get start, end frame from time slider
@@ -1060,22 +1049,68 @@ class MsXGenHub():
 		}
 		for attr in vrayAttrs:
 			vraySet.setAttr(attr, vrayAttrs[attr])
+
+		# disable render region
+		editor = pm.renderWindowEditor(query=True, editorName=True)
+		if len(editor) == 0:
+			editor = pm.renderWindowEditor('renderView')
+		pm.renderWindowEditor(editor, edit=True, resetRegion=True)
+		pm.mel.eval('vray showVFB;')
+		pm.mel.eval('vray vfbControl -setregion reset;')
+
+		# hide imagePlane
+		for imgp in pm.ls(type="imagePlane") or []:
+			imgp.setAttr("alphaGain", 0)
+
+		# render selected only
+		opVar = 'renderViewRenderSelectedObj'
+		opAlt = False
+		if not pm.optionVar(exists=opVar) or not pm.optionVar(q=opVar):
+			pm.optionVar(intValue=[opVar, 1])
+			opAlt = True
+		# select palette hierarchy
+		pm.select(clear=True)
+		pm.select(palName, hierarchy=True)
+
 		# hit render
 		pm.mel.RenderIntoNewWindow()
+
 		# modify .vrscene file
-		content = ''
+		_ln = ''
+		headnotes = ''
 		vrscene = open(vrsceneFile, 'r')
-		for _ in " "*7: content += vrscene.readline()
+		for _ln in " "*9: headnotes += vrscene.readline()
+
+		samplers = ''
+		is_sampler = False
+		while not _ln.startswith('//'):
+			_ln = vrscene.readline()
+
+			if _ln.startswith('TexHairSampler'):
+				is_sampler = True
+
+			if is_sampler:
+				samplers += _ln
+
+				if _ln.startswith('}'):
+					samplers += '\n'
+					is_sampler = False
+
 		vrscene.close()
+
+		includes = ''
 		include = '#include "%s_%s.vrscene"\n'
 		vrsType = ['nodes', 'geometry', 'materials', 'textures', 'bitmaps']
 		for vt in vrsType:
-			content += include % (vrsceneFile.split('.')[0], vt)
+			includes += include % (vrsceneFile.split('.')[0], vt)
 		with open(vrsceneFile, 'w') as vrscene:
-			vrscene.write(content)
+			vrscene.write(headnotes + samplers + includes)
 
 		# restore preview only in cam value
 		self.setPreviewInCam(palName, prvValueDict)
+		# restore render selected only
+		if opAlt:
+			pm.optionVar(intValue=['renderViewRenderSelectedObj', 0])
 
 		self.notifyMsg('File .vrscene Export Complete !', 0)
 
