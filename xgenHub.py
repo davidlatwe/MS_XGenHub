@@ -451,6 +451,7 @@ class MsXGenHub():
 			# set export delta
 			pm.setAttr(palName + '.xgExportAsDelta', 1)
 
+		pm.warning('[XGen Hub] : Collection Import Complete !')
 		self.notifyMsg('Collection Import Complete !', 0)
 
 		return palName
