@@ -71,7 +71,12 @@ def setupImportedMap(fileName, palName, descNames, repoProjPath):
 						
 						srcdir = os.path.join(palPath, preDescription)
 						dstdir = os.path.join(curPalDir, curDescription)
-						dir_util.copy_tree(srcdir, dstdir)
+						srcdir = os.path.normpath(srcdir)
+						dstdir = os.path.normpath(dstdir)
+						try:
+							dir_util.copy_tree(srcdir, dstdir)
+						except UnicodeDecodeError as e:
+							pass
 					else:
 						cmds.error( 'The [xgDataPath] not starts with "${PROJECT}"' )
 				line = fp.next()
