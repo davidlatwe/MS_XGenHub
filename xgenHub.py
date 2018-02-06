@@ -437,7 +437,8 @@ class MsXGenHub():
 					presetMel.extend(presetDict.values())
 				# dump preset
 				for prs in presetMel:
-					os.remove(prs)
+					if os.path.isfile(prs):
+						os.remove(prs)
 			else:
 				pm.warning('[XGen Hub] : nDynamic attribute presets folder not found.')
 
