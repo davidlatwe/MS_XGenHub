@@ -1111,6 +1111,15 @@ class MsXGenHub():
 		# restore render selected only
 		if opAlt:
 			pm.optionVar(intValue=[opVar, 0])
+		# restore vray render settings
+		vrayAttrs = {
+			'vrscene_render_on': 1,
+			'vrscene_on': 0,
+			'vrscene_filename': '',
+			'animBatchOnly': 1
+		}
+		for attr in vrayAttrs:
+			vraySet.setAttr(attr, vrayAttrs[attr])
 
 		self.notifyMsg('File .vrscene Export Complete !', 0)
 
