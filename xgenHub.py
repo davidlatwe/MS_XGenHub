@@ -1065,7 +1065,7 @@ class MsXGenHub():
 		# render selected only
 		opVar = 'renderViewRenderSelectedObj'
 		opAlt = False
-		if not pm.optionVar(exists=opVar) or not pm.optionVar(q=opVar):
+		if not pm.optionVar(exists=opVar) or not pm.optionVar(query=opVar):
 			pm.optionVar(intValue=[opVar, 1])
 			opAlt = True
 		# select palette hierarchy
@@ -1110,7 +1110,7 @@ class MsXGenHub():
 		self.setPreviewInCam(palName, prvValueDict)
 		# restore render selected only
 		if opAlt:
-			pm.optionVar(intValue=['renderViewRenderSelectedObj', 0])
+			pm.optionVar(intValue=[opVar, 0])
 
 		self.notifyMsg('File .vrscene Export Complete !', 0)
 
