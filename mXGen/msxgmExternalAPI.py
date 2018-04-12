@@ -115,6 +115,12 @@ def setupImportedMap(fileName, palName, descNames, repoProjPath):
 						ip = texNode + ".outAlpha"
 					shapeChildren = cmds.listRelatives( geoms, shapes=True )
 					shapeAttrName2 = shapeChildren[0] + "." + shapeAttrName
+					conn = cmds.listConnections(shapeAttrName2,
+												destination=False,
+												source=True,
+												plugs=True)
+					for c in conn:
+						cmds.disconnectAttr(c, shapeAttrName2)
 					cmds.connectAttr (ip, shapeAttrName2)
 						
 				line = fp.next()
