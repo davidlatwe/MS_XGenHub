@@ -115,7 +115,7 @@ def replaceMaterial(vrayNode, replaceMtl):
 		vrayNode.set('material', replaceMtl)
 
 
-def replaceNodeParamValue(originNode, replaceNodeName):
+def replaceNodeParamValue(originNode, replaceNodeName, overrideShd):
 	"""
 	get proxy node render attribute values and set to replacement node
 	"""
@@ -123,7 +123,7 @@ def replaceNodeParamValue(originNode, replaceNodeName):
 	for replaceNode in findByName(replaceNodeName + '*'):
 		if replaceNode.type() == 'Node':
 			# proxy ObjectID
-			if originNode.has('objectID'):
+			if overrideShd and originNode.has('objectID'):
 				replaceNode.set('objectID', originNode.get('objectID'))
 			# proxy primary vis
 			if originNode.has('primary_visibility'):
@@ -132,18 +132,18 @@ def replaceNodeParamValue(originNode, replaceNodeName):
 			if originNode.has('visible'):
 				replaceNode.set('visible', originNode.get('visible'))
 			# proxy material
-			if originNode.has('material'):
+			if overrideShd and originNode.has('material'):
 				replaceNode.set('material', originNode.get('material'))
 
 
-def kickProxyOutWith(yourDaddy):
+def kickProxyOutWith(yourDaddy, overrideShd= False):
 	"""
 	@yourDaddy  this is a args list, for shorter line purpose
 
 	@vrsceneList		vrscene file path list
 	@principalList		principal object name list
 	@proxyPrefix		proxy object name prefix in side the working scene
-	@principalPrefix	principal object in side vrscene file's name prefix
+	@principalPrefix	principal object inside vrscene file's name prefix
 	"""
 	vrsceneList, principalList, proxyPrefix, principalPrefix = yourDaddy
 
@@ -156,24 +156,29 @@ def kickProxyOutWith(yourDaddy):
 		# check if proxy exists before we load principals
 		if findByName(proxyPrefix + principalList[idx] + '*'):
 			DaddyArrived = True
+			print('loading vrscene.. ' + vrsFile)
 			addSceneContent(vrsFile, prefix= principalPrefix + principalList[idx])
+			print('loading complete.')
 
 	if DaddyArrived:
 		# modify object property(mtlwrapper)
+		print('modify object property.')
 		for principalName in principalList:
 			for proxyNode in findByName(proxyPrefix + principalName + '*'):
 				if proxyNode.type() == 'Node':
-					replaceNodeParamValue(proxyNode, principalPrefix + principalName)
+					replaceNodeParamValue(proxyNode, principalPrefix + principalName, overrideShd)
 					# jump to find next principal
 					break
 
 		# remove placeholder
+		print('remove placeholder.')
 		for proxyNode in findByName(proxyPrefix + '*'):
 			delete(proxyNode)
 
 		# adjust light linking
+		print('adjust light linking.')
 		litLinkingAdj(litLink_maya, proxyPrefix, principalPrefix, principalList)
 
-		print 'Daddy\'s Home, honey.'
+		print 'vrscene merging completed.'
 	else:
-		print 'Daddy didn\'t come.'
+		print 'vrscene merging failed.'

@@ -10,20 +10,20 @@ from functools import partial
 
 import pymel.core as pm
 
-import mQtGui; reload(mQtGui)
-import mQtGui.muiSwitchBox as mqsb; reload(mqsb)
-import mQtGui.mGetQt as mqt; reload(mqt)
+from . import mQtGui; reload(mQtGui)
+from .mQtGui import muiSwitchBox as mqsb; reload(mqsb)
+from .mQtGui import mGetQt as mqt; reload(mqt)
 
-import xgenHub; reload(xgenHub)
+from . import xgenHub; reload(xgenHub)
 
-import mMaya as mMaya; reload(mMaya)
-import mMaya.mTexture as mTex; reload(mTex)
+from . import mMaya as mMaya; reload(mMaya)
+from .mMaya import mTexture as mTex; reload(mTex)
 
-import ui;reload(ui)
-import ui.panelMOD as panelMOD; reload(panelMOD)
-import ui.panelSIM as panelSIM; reload(panelSIM)
-import ui.panelVRS as panelVRS; reload(panelVRS)
-import ui.panelREN as panelREN; reload(panelREN)
+from . import ui;reload(ui)
+from .ui import panelMOD as panelMOD; reload(panelMOD)
+from .ui import panelSIM as panelSIM; reload(panelSIM)
+from .ui import panelVRS as panelVRS; reload(panelVRS)
+from .ui import panelREN as panelREN; reload(panelREN)
 
 
 __version__ = xgenHub.__version__

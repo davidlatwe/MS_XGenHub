@@ -1,6 +1,6 @@
 from maya.OpenMayaUI import MQtUtil
 from ..vendor.Qt import QtWidgets, QtCore, QtGui
-import mGetQt as mqt; reload(mqt)
+from . import mGetQt as mqt; reload(mqt)
 
 class SwitchBox(QtWidgets.QCheckBox):
 

@@ -118,10 +118,10 @@ def makePanel(cls, switch):
 				shotDir = cls.paletteDeltaDir(palName, version, '')
 				if os.path.exists(shotDir):
 					shotList = os.listdir(shotDir)
-					if shotList:
-						for shot in shotList:
-							if os.path.isfile(cls.getVRaySceneFilePath(palName, shot)):
-								pm.menuItem(shot, p= sht_opMenu)
+					for shot in shotList:
+						vrsdir = os.path.dirname(cls.getVRaySceneFilePath(palName, shot))
+						if any(f.endswith(".vrscene") for f in os.listdir(vrsdir)):
+							pm.menuItem(shot, p= sht_opMenu)
 
 	def snapshot_show(index, *args):
 		"""doc"""

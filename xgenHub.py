@@ -19,15 +19,15 @@ import xgenm.xgGlobal as xgg
 import xgenm.XgExternalAPI as base
 import xgenm.xgCmds as xgcmds
 
-import mXGen; reload(mXGen)
-import mXGen.msxgmExternalAPI as msxgApi; reload(msxgApi)
-import mXGen.msxgmAnimWireTool as msxgAwt; reload(msxgAwt)
+from . import mXGen; reload(mXGen)
+from .mXGen import msxgmExternalAPI as msxgApi; reload(msxgApi)
+from .mXGen import msxgmAnimWireTool as msxgAwt; reload(msxgAwt)
 
-import mMaya as mMaya; reload(mMaya)
-import mMaya.mRender as mRender; reload(mRender)
+from . import mMaya as mMaya; reload(mMaya)
+from .mMaya import mRender as mRender; reload(mRender)
 
 
-__version__ = '1.1.0'
+__version__ = '1.2.0'
 
 
 def linkedCheck(func):
@@ -699,6 +699,54 @@ class MsXGenHub():
 
 		return True
 
+	def generate_vrscene(self, vrsceneFile, palName):
+
+		vrsceneDir = os.path.dirname(vrsceneFile)
+		all_vrsfiles = os.listdir(vrsceneDir)
+
+		if os.path.isfile(vrsceneFile) and all_vrsfiles:
+			firse_vrsfile = all_vrsfiles[1]
+		else:
+			firse_vrsfile = all_vrsfiles[0]
+		firse_vrsfile = os.path.join(vrsceneDir, firse_vrsfile)
+
+		# read from first file
+		_ln = ''
+		headnotes = ''
+		with open(firse_vrsfile, 'r') as vrscene:
+			for _ln in " "*9: headnotes += vrscene.readline()
+
+			samplers = ''
+			is_sampler = False
+			while not _ln.startswith('#'):
+				_ln = vrscene.readline()
+
+				if _ln.startswith('TexHairSampler'):
+					is_sampler = True
+
+				if is_sampler:
+					samplers += _ln
+
+					if _ln.startswith('}'):
+						samplers += '\n'
+						is_sampler = False
+
+		# collect other vrsfile need to be included
+		vrsType = ['nodes', 'geometry', 'materials', 'textures', 'bitmaps']
+		to_include = []
+
+		for vrsfile in all_vrsfiles:
+			if any(vrsfile.endswith(vt + ".vrscene") for vt in vrsType):
+				to_include.append(vrsfile)
+
+		# write main vrsfile
+		includes = ''
+		include = '#include "{0}/{1}"\n'
+		for vrsfile in to_include:
+			includes += include.format(vrsceneDir, vrsfile)
+		with open(vrsceneFile, 'w') as vrscene:
+			vrscene.write(headnotes + samplers + includes)
+
 	@linkedCheck
 	def connectVRayScene(self, palName, shotName):
 		"""doc"""
@@ -707,12 +755,16 @@ class MsXGenHub():
 			self.notifyMsg('Current Renderer is Not V-Ray !', 2)
 			return None
 
+		# generate main .vrscene file
+		vrsceneFile = self.getVRaySceneFilePath(palName, shotName)
+		self.generate_vrscene(vrsceneFile, palName)
+
 		# hatch prxoy cube
 		proxyNodeName = self.proxyPrefix + palName
 		if pm.ls(proxyNodeName, typ= 'transform'):
 			pm.delete(pm.PyNode(proxyNodeName))
 		customAttrs = {
-			'vrscenePath': self.getVRaySceneFilePath(palName, shotName),
+			'vrscenePath': vrsceneFile,
 			'paletteName': palName,
 			}
 		prxoy = pm.polyCube(n= proxyNodeName, ch= False)[0]
@@ -1037,7 +1089,7 @@ class MsXGenHub():
 			'misc_exportMaterials': 1,
 			'misc_exportTextures': 1,
 			'misc_exportBitmaps': 1,
-			'misc_eachFrameInFile': 0,
+			'misc_eachFrameInFile': 1,
 			'misc_meshAsHex': 1,
 			'misc_transformAsHex': 1,
 			'misc_compressedVrscene': 1,
@@ -1070,41 +1122,15 @@ class MsXGenHub():
 			opAlt = True
 		# select palette hierarchy
 		pm.select(clear=True)
-		pm.select(palName, hierarchy=True)
+		pm.select(palName, hierarchy=True, noExpand=True)
+
+		# get resolved repo shotName path
+		deltaPath = self.paletteDeltaDir(palName, version, shotName)
+		if not os.path.exists(deltaPath):
+			os.mkdir(deltaPath)
 
 		# hit render
 		pm.mel.RenderIntoNewWindow()
-
-		# modify .vrscene file
-		_ln = ''
-		headnotes = ''
-		vrscene = open(vrsceneFile, 'r')
-		for _ln in " "*9: headnotes += vrscene.readline()
-
-		samplers = ''
-		is_sampler = False
-		while not _ln.startswith('//'):
-			_ln = vrscene.readline()
-
-			if _ln.startswith('TexHairSampler'):
-				is_sampler = True
-
-			if is_sampler:
-				samplers += _ln
-
-				if _ln.startswith('}'):
-					samplers += '\n'
-					is_sampler = False
-
-		vrscene.close()
-
-		includes = ''
-		include = '#include "%s_%s.vrscene"\n'
-		vrsType = ['nodes', 'geometry', 'materials', 'textures', 'bitmaps']
-		for vt in vrsType:
-			includes += include % (vrsceneFile.split('.')[0], vt)
-		with open(vrsceneFile, 'w') as vrscene:
-			vrscene.write(headnotes + samplers + includes)
 
 		# restore preview only in cam value
 		self.setPreviewInCam(palName, prvValueDict)

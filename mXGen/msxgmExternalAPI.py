@@ -119,8 +119,9 @@ def setupImportedMap(fileName, palName, descNames, repoProjPath):
 												destination=False,
 												source=True,
 												plugs=True)
-					for c in conn:
-						cmds.disconnectAttr(c, shapeAttrName2)
+					if conn:
+						for c in conn:
+							cmds.disconnectAttr(c, shapeAttrName2)
 					cmds.connectAttr (ip, shapeAttrName2)
 						
 				line = fp.next()
