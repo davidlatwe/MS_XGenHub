@@ -2,7 +2,7 @@
 '''
 Created on 2017.05.27
 
-@author: davidpower
+@author: davidlatwe
 
 For implant versioning to our xgen workflow.
 
@@ -27,7 +27,7 @@ from . import mMaya as mMaya; reload(mMaya)
 from .mMaya import mRender as mRender; reload(mRender)
 
 
-__version__ = '1.2.0'
+__version__ = '1.2.1'
 
 
 def linkedCheck(func):
@@ -93,7 +93,7 @@ class MsXGenHub():
 		if not os.path.exists(self.vsRepo):
 			# Create versionRepo dir
 			try:
-				os.mkdir(self.vsRepo)
+				os.makedirs(self.vsRepo)
 			except:
 				print self.vsRepo
 				raise
@@ -125,7 +125,7 @@ class MsXGenHub():
 		# mel script for set module import path
 		mImportVrs = '' \
 		+ '// \n' \
-		+ '// @author: davidpower\n' \
+		+ '// @author: davidlatwe\n' \
 		+ '// \n' \
 		+ '//  For V-Ray Post Translate Python Script\n' \
 		+ '//  to import modules from scripts folder in the workspace on the fly\n' \
@@ -145,7 +145,7 @@ class MsXGenHub():
 		# script to parse args
 		mVrsInitScript = '' \
 		+ '# \n' \
-		+ '# @author: davidpower\n' \
+		+ '# @author: davidlatwe\n' \
 		+ '# \n' \
 		+ '#  For V-Ray Post Translate Python Script\n' \
 		+ '#  parse args to vray post python script\n' \
@@ -541,6 +541,7 @@ class MsXGenHub():
 							dir_util.remove_tree(dst)
 						except:
 							pm.warning('[XGen Hub] : Dir may not remove. -> ' + dst)
+					dir_util._path_created = {}
 					dir_util.copy_tree(src, dst)
 			else:
 				pm.error('[XGen Hub] : Some data missing, Check ScriptEditor. grooming import stopped.')
@@ -865,6 +866,7 @@ class MsXGenHub():
 				srcMap = os.path.join(srcDescDir, mapDir)
 				dstMap = os.path.join(dstDescDir, mapDir)
 				if os.path.isdir(srcMap):
+					dir_util._path_created = {}
 					dir_util.copy_tree(srcMap, dstMap)
 
 		# export palettes
@@ -929,7 +931,6 @@ class MsXGenHub():
 				abcRoot = '-root ' + ' -root '.join([cur.longName() for cur in pm.ls(curves)])
 				abcPath = expPath + 'curves.abc'
 				pm.mel.AbcExport(j= abcCmds + abcRoot + ' -file ' + abcPath)
-		pm.undo()
 
 		if anim:
 			# save out hairSystem preset
@@ -940,14 +941,14 @@ class MsXGenHub():
 			# move preset file to version repo
 			presetRepo = self.nDynPresetPath(palName, version)
 			if not os.path.exists(presetRepo):
-				os.mkdir(presetRepo)
+				os.makedirs(presetRepo)
 			for prs in presetMel:
 				dstPath = '/'.join([presetRepo, os.path.basename(prs)])
 				shutil.move(prs, dstPath)
 			# create empty _shot_ folder
 			shotDir = self.paletteDeltaDir(palName, version, '')
 			if not os.path.exists(shotDir):
-				os.mkdir(shotDir)
+				os.makedirs(shotDir)
 
 		# export snapshot
 		for i in range(5):
@@ -955,7 +956,7 @@ class MsXGenHub():
 			if os.path.isfile(tmpPath):
 				imgPath = self.snapshotImgPath(palName, version, str(i+1))
 				if not os.path.exists(os.path.dirname(imgPath)):
-					os.mkdir(os.path.dirname(imgPath))
+					os.makedirs(os.path.dirname(imgPath))
 				shutil.move(tmpPath, imgPath)
 
 		# restore dataPath
@@ -1012,7 +1013,7 @@ class MsXGenHub():
 		# get resolved repo shotName path
 		deltaPath = self.paletteDeltaDir(palName, version, shotName)
 		if not os.path.exists(deltaPath):
-			os.mkdir(deltaPath)
+			os.makedirs(deltaPath)
 		
 		deltaFile = '/'.join([deltaPath, palName + '.xgd'])
 
@@ -1039,7 +1040,7 @@ class MsXGenHub():
 			if os.path.isfile(tmpPath):
 				imgPath = self.snapshotImgPath(palName, version, str(i+1), shotName)
 				if not os.path.exists(os.path.dirname(imgPath)):
-					os.mkdir(os.path.dirname(imgPath))
+					os.makedirs(os.path.dirname(imgPath))
 				shutil.move(tmpPath, imgPath)
 
 		self.refresh('Full')
@@ -1127,7 +1128,7 @@ class MsXGenHub():
 		# get resolved repo shotName path
 		deltaPath = self.paletteDeltaDir(palName, version, shotName)
 		if not os.path.exists(deltaPath):
-			os.mkdir(deltaPath)
+			os.makedirs(deltaPath)
 
 		# hit render
 		pm.mel.RenderIntoNewWindow()
@@ -1251,8 +1252,9 @@ class MsXGenHub():
 
 @contextmanager
 def undoable(name):
+	pm.undoInfo(ock=True, cn=name)
+
 	try:
-		pm.undoInfo(ock=True, cn=name)
 		yield name
 	except Exception, e:
 		import traceback
@@ -1260,3 +1262,7 @@ def undoable(name):
 		traceback.print_exc()
 	finally:
 		pm.undoInfo(cck=True)
+		try:
+			pm.undo()
+		except RuntimeError as e:
+			pm.warning(str(e))
