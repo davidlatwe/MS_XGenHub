@@ -27,7 +27,7 @@ from . import mMaya as mMaya; reload(mMaya)
 from .mMaya import mRender as mRender; reload(mRender)
 
 
-__version__ = '1.2.1'
+__version__ = '1.3.0'
 
 
 def linkedCheck(func):
@@ -136,11 +136,10 @@ class MsXGenHub():
 		+ 'python("import mVrsInit;reload(mVrsInit);yourDaddy=mVrsInit.getDaddy()");\n'
 
 		mImportVrsPath = scriptDir + '/mImportVrs.mel'
-		if not os.path.isfile(mImportVrsPath):
-			if not os.path.isdir(os.path.dirname(mImportVrsPath)):
-				os.makedirs(os.path.dirname(mImportVrsPath))
-			with open(mImportVrsPath, 'w') as scriptFile:
-				scriptFile.write(mImportVrs)
+		if not os.path.isdir(os.path.dirname(mImportVrsPath)):
+			os.makedirs(os.path.dirname(mImportVrsPath))
+		with open(mImportVrsPath, 'w') as scriptFile:
+			scriptFile.write(mImportVrs)
 
 		# script to parse args
 		mVrsInitScript = '' \
@@ -151,24 +150,32 @@ class MsXGenHub():
 		+ '#  parse args to vray post python script\n' \
 		+ '# \n' \
 		+ 'import pymel.core as pm\n' \
+		+ 'import vrscene_selector as vrsselector\n' \
+		+ 'reload(vrsselector)\n' \
 		+ 'def getDaddy():\n' \
 		+ '	vrsceneList = []; paletteList = []\n' \
 		+ '	for dag in pm.ls("' + self.proxyPrefix + '*", typ= "transform"):\n' \
 		+ '		if dag.hasAttr("vrscenePath"): vrsceneList.append(dag.getAttr("vrscenePath"))\n' \
 		+ '		if dag.hasAttr("paletteName"): paletteList.append(dag.getAttr("paletteName"))\n' \
+		+ '	vrsceneList = vrsselector.select(vrsceneList)\n' \
 		+ '	return [vrsceneList, paletteList, "' + self.proxyPrefix + '", "' + self.princPrefix + '"]\n'
 
 		mVrsInitScriptPath = scriptDir + '/mVrsInit.py'
-		if not os.path.isfile(mVrsInitScriptPath):
-			if not os.path.isdir(os.path.dirname(mVrsInitScriptPath)):
-				os.makedirs(os.path.dirname(mVrsInitScriptPath))
-			with open(mVrsInitScriptPath, 'w') as scriptFile:
-				scriptFile.write(mVrsInitScript)
+		if not os.path.isdir(os.path.dirname(mVrsInitScriptPath)):
+			os.makedirs(os.path.dirname(mVrsInitScriptPath))
+		with open(mVrsInitScriptPath, 'w') as scriptFile:
+			scriptFile.write(mVrsInitScript)
+
+		# script to select .vrscene file
+		selectorSrc = '/'.join([os.path.dirname(__file__), 'mVRay', 'vrscene_selector.py'])
+		selectorDst = scriptDir + '/vrscene_selector.py'
+		if os.path.isfile(selectorSrc):
+			shutil.copyfile(selectorSrc, selectorDst)
 
 		# script to process .vrscene file
 		mVRaySceneSrc = '/'.join([os.path.dirname(__file__), 'mVRay', 'mVRayScene.py'])
 		mVRaySceneDst = scriptDir + '/mVRayScene.py'
-		if not os.path.isfile(mVRaySceneDst) and os.path.isfile(mVRaySceneSrc):
+		if os.path.isfile(mVRaySceneSrc):
 			shutil.copyfile(mVRaySceneSrc, mVRaySceneDst)
 
 
@@ -700,53 +707,73 @@ class MsXGenHub():
 
 		return True
 
-	def generate_vrscene(self, vrsceneFile, palName):
+	def cleanup_vrscene(self, vrsceneFile, palName):
 
 		vrsceneDir = os.path.dirname(vrsceneFile)
 		all_vrsfiles = os.listdir(vrsceneDir)
 
-		if os.path.isfile(vrsceneFile) and all_vrsfiles:
-			firse_vrsfile = all_vrsfiles[1]
-		else:
-			firse_vrsfile = all_vrsfiles[0]
-		firse_vrsfile = os.path.join(vrsceneDir, firse_vrsfile)
+		vrsType = ['bitmaps', 'geometry', 'materials', 'nodes', 'textures']
 
-		# read from first file
-		_ln = ''
-		headnotes = ''
-		with open(firse_vrsfile, 'r') as vrscene:
-			for _ln in " "*9: headnotes += vrscene.readline()
+		if not all_vrsfiles:
+			self.notifyMsg('.vrscene dir is empty.', 2)
+			pm.error('[XGen Hub] : .vrscene dir is empty. -> ' + vrsceneDir)
+			return None
 
-			samplers = ''
-			is_sampler = False
-			while not _ln.startswith('#'):
-				_ln = vrscene.readline()
+		amount = 0
+		pm.progressWindow(title='cleanup vrscene',
+						  progress=amount,
+						  status='Cleaning...',
+						  maxValue=len(all_vrsfiles),
+						  isInterruptable=False)
+		try:
+			for vrsfile in all_vrsfiles:
+				amount += 1
+				pm.progressWindow(edit=True, progress=amount)
 
-				if _ln.startswith('TexHairSampler'):
-					is_sampler = True
+				if not vrsfile.endswith(".vrscene"):
+					continue
+				if any(vrsfile.endswith("_{}.vrscene".format(typ)) for typ in vrsType):
+					continue
 
-				if is_sampler:
-					samplers += _ln
+				vrsfile_path = os.path.join(vrsceneDir, vrsfile)
 
-					if _ln.startswith('}'):
-						samplers += '\n'
-						is_sampler = False
+				# read
+				headnotes = ''
+				samplers = ''
+				include = ''
+				with open(vrsfile_path, 'r') as vrscene:
+					is_processed = False
+					is_sampler = False
+					for i, line in enumerate(vrscene):
+						if i <= 8:
+							if "(Processed)" in line:
+								is_processed = True
+								break
+							headnotes += line
 
-		# collect other vrsfile need to be included
-		vrsType = ['nodes', 'geometry', 'materials', 'textures', 'bitmaps']
-		to_include = []
+						if line.startswith('TexHairSampler'):
+							is_sampler = True
+						if is_sampler:
+							samplers += line
+							if line.startswith('}'):
+								samplers += '\n'
+								is_sampler = False
 
-		for vrsfile in all_vrsfiles:
-			if any(vrsfile.endswith(vt + ".vrscene") for vt in vrsType):
-				to_include.append(vrsfile)
+						if line.startswith('#include'):
+							include += line
 
-		# write main vrsfile
-		includes = ''
-		include = '#include "{0}/{1}"\n'
-		for vrsfile in to_include:
-			includes += include.format(vrsceneDir, vrsfile)
-		with open(vrsceneFile, 'w') as vrscene:
-			vrscene.write(headnotes + samplers + includes)
+				if is_processed:
+					continue
+
+				# mark processed
+				headnotes = headnotes.replace("Exported by V-Ray Plugins Exporter",
+								  			  "Exported by V-Ray Plugins Exporter (Processed)")
+
+				# write
+				with open(vrsfile_path, 'w') as vrscene:
+					vrscene.write(headnotes + samplers + include)
+		finally:
+			pm.progressWindow(endProgress=1)
 
 	@linkedCheck
 	def connectVRayScene(self, palName, shotName):
@@ -758,7 +785,7 @@ class MsXGenHub():
 
 		# generate main .vrscene file
 		vrsceneFile = self.getVRaySceneFilePath(palName, shotName)
-		self.generate_vrscene(vrsceneFile, palName)
+		self.cleanup_vrscene(vrsceneFile, palName)
 
 		# hatch prxoy cube
 		proxyNodeName = self.proxyPrefix + palName
