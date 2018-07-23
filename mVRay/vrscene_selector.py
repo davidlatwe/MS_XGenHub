@@ -12,7 +12,8 @@ def select(vrsceneList):
     if not pm.about(batch=True):
         vrsettings = pm.PyNode("vraySettings")
         anim_type = vrsettings.animType.get()
-        if anim_type <= 1 and vrsettings.animBatchOnly.get():
+        if (anim_type == 0 or
+                (anim_type == 1 and vrsettings.animBatchOnly.get())):
             start = end = int(pm.currentTime())
 
     # roughly adding 2 frames, in case motion blur is on

@@ -156,13 +156,16 @@ def kickProxyOutWith(yourDaddy, overrideShd= False):
 		# check if proxy exists before we load principals
 		if findByName(proxyPrefix + principalList[idx] + '*'):
 			DaddyArrived = True
-			if isinstance(vrsFile, list) and vrsFile:
-				# selected `each frame`
-				print('loading vrscene (each frame).. ' + vrsFile[0])
-				addSceneContent(vrsFile[0], prefix= principalPrefix + principalList[idx])
-				for vrs in vrsFile[1:]:
-					appendSceneContent(vrs, prefix= principalPrefix + principalList[idx])
-				print('loading complete. (each frame)')
+			if isinstance(vrsFile, list):
+				if vrsFile:
+					# selected `each frame`
+					print('loading vrscene (each frame).. ' + vrsFile[0])
+					addSceneContent(vrsFile[0], prefix= principalPrefix + principalList[idx])
+					for vrs in vrsFile[1:]:
+						appendSceneContent(vrs, prefix= principalPrefix + principalList[idx])
+					print('loading complete. (each frame)')
+				else:
+					print('Empty vrscene list, possible not available range. (each frame)')
 			else:
 				print('loading vrscene.. ' + vrsFile)
 				addSceneContent(vrsFile, prefix= principalPrefix + principalList[idx])
