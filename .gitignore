@@ -66,4 +66,7 @@ target/
 # worktree merge batch
 __publish.bat
 
+# sublime text project
+*.sublime*
+
 Thumbs.db
